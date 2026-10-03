@@ -1,0 +1,135 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.sdist]
+include = ["app"]
+
+
+[project]
+name = "government-ai-assistant-backend"
+version = "0.1.0"
+description = "Backend for the Government AI Assistant — multilingual RAG system"
+requires-python = ">=3.11"
+
+dependencies = [
+    # Web Framework
+    "fastapi==0.111.1",
+    "uvicorn[standard]==0.30.1",
+    "httpx==0.27.0",
+
+    # Data Validation & Settings
+    "pydantic==2.7.4",
+    "pydantic-settings==2.3.4",
+
+    # Database
+    "sqlalchemy==2.0.31",
+    "alembic==1.13.2",
+    "aiosqlite==0.20.0",       # SQLite async driver (dev)
+    "asyncpg==0.29.0",         # PostgreSQL async driver (prod)
+
+    # Vector Store
+    "chromadb==0.5.3",
+
+    # LLM & RAG
+    "langchain==0.2.11",
+    "langchain-community==0.2.10",
+    "langchain-chroma==0.1.2",
+    "ollama==0.3.0",
+
+    # Embeddings
+    "sentence-transformers==3.0.1",
+    "torch>=2.3.1",
+
+    # Document Processing
+    "beautifulsoup4==4.12.3",
+    "lxml==5.2.2",
+
+    # Text & Language
+    "langdetect==1.0.9",
+    "rank-bm25==0.2.2",
+    "tiktoken==0.7.0",
+
+    # Logging
+    "structlog==24.2.0",
+
+    # Security & Rate Limiting
+    "slowapi==0.1.9",
+    "python-jose[cryptography]==3.3.0",
+    "passlib[bcrypt]==1.7.4",
+
+    # Utilities
+    "python-multipart==0.0.9",
+    "python-dotenv==1.0.1",
+    "chardet==5.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest==8.3.2",
+    "pytest-asyncio==0.23.8",
+    "pytest-cov==5.0.0",
+    "pytest-mock==3.14.0",
+    "httpx==0.27.0",
+    "anyio==4.4.0",
+
+    # RAG Evaluation
+    "ragas==0.1.14",
+
+    # Load Testing
+    "locust==2.29.1",
+
+    # Code Quality
+    "ruff==0.5.4",
+    "black==24.4.2",
+    "mypy==1.11.0",
+    "pre-commit==3.7.1",
+
+    # Type Stubs
+    "types-beautifulsoup4==4.12.0.20240511",
+    "types-passlib==1.7.7.20240327",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "W", "I", "N", "UP", "ANN", "B", "SIM"]
+ignore = ["ANN101", "ANN102"]
+
+[tool.ruff.per-file-ignores]
+"tests/**" = ["ANN", "S101"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+exclude = ["tests/", "scripts/", "alembic/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
+markers = [
+    "rag_eval: marks tests as RAG evaluation tests (slow, requires real LLM)",
+    "integration: marks tests as integration tests (requires running services)",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/migrations/*", "tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

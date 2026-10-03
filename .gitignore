@@ -1,0 +1,123 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Testing & Coverage ───────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+test_*.db
+
+# ─── Type Checking ───────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# ─── Node.js / Frontend ──────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+frontend/dist/
+frontend/build/
+.eslintcache
+
+# ─── Environment Files (NEVER commit real .env files) ────────────────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.env
+backend/.env
+# Keep only the example templates
+!.env.example
+!backend/.env.example
+
+# ─── Documentation build outputs ─────────────────────────────────────────────
+docs/_build/
+docs/.doctrees/
+site/
+
+# ─── Data & Databases ────────────────────────────────────────────────────────
+data/chroma_db/
+data/processed/
+data/indexes/
+data/indexed/
+data/translation_audit/
+data/raw/
+*.db
+*.sqlite
+*.sqlite3
+
+# ─── Machine Learning Models & HuggingFace Cache ─────────────────────────────
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+models/
+.cache/
+# HuggingFace hub cache
+~/.cache/huggingface/
+
+# ─── Server output/temp files ────────────────────────────────────────────────
+server_out.txt
+server_err.txt
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+.docker/
+
+# ─── OS Files ────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── IDE Files ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Secrets ─────────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+secrets/

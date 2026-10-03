@@ -1,0 +1,32 @@
+{
+  "props": {
+    "pageProps": {}
+  },
+  "page": "/schemes/[slug]",
+  "query": {},
+  "buildId": "AiTVSiyzLGiBWbRbB_ubL",
+  "assetPrefix": "https://cdn.myscheme.in",
+  "nextExport": true,
+  "autoExport": true,
+  "isFallback": false,
+  "locale": "en",
+  "locales": [
+    "en",
+    "hi",
+    "or",
+    "as",
+    "bn",
+    "gu",
+    "kn",
+    "ml",
+    "mr",
+    "pa",
+    "ta",
+    "te",
+    "ur",
+    "ks",
+    "mai"
+  ],
+  "defaultLocale": "en",
+  "scriptLoader": []
+}

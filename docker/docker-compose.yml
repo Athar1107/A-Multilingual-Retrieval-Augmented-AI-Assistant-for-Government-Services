@@ -1,0 +1,148 @@
+version: "3.9"
+
+# Government AI Assistant — Local Development Stack
+# Usage: docker compose up
+# All services run with dev-friendly settings (hot reload, verbose logging).
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    driver: bridge
+
+volumes:
+  chroma_data:
+  ollama_data:
+  sql_data:
+
+services:
+
+  # ─── Nginx Reverse Proxy ──────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: gov-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  # ─── Frontend (React + Vite Dev Server) ───────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: gov-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:80/api
+    volumes:
+      - ./frontend/src:/app/src:ro     # hot reload in dev
+    depends_on:
+      - backend
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  # ─── Backend (FastAPI + Uvicorn) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gov-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - APP_ENV=development
+      - CHROMA_HOST=chromadb
+      - OLLAMA_HOST=ollama
+      - EMBEDDING_SERVICE_HOST=embedding
+      - DATABASE_URL=sqlite+aiosqlite:///./data/gov_ai.db
+    volumes:
+      - ./data:/app/data          # persistent data directory
+      - sql_data:/app/data/sql
+    depends_on:
+      chromadb:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      embedding:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/v1/health/live').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ─── ChromaDB (Vector Store) ──────────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:0.5.3
+    container_name: gov-chromadb
+    ports:
+      - "8001:8000"               # exposed for direct dev access
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── Ollama (LLM: Llama 3.1) ─────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: gov-ollama
+    ports:
+      - "11434:11434"             # exposed for direct dev access
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - internal
+    restart: unless-stopped
+    # Pull the model on first run:
+    # docker exec gov-ollama ollama pull llama3.1:8b
+
+  # ─── Embedding Service (BGE-M3) ───────────────────────────────────────────
+  embedding:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gov-embedding
+    command: ["uvicorn", "app.embedding_server:app", "--host", "0.0.0.0", "--port", "8002"]
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./backend/.env
+    environment:
+      - EMBEDDING_MODEL=BAAI/bge-m3
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s           # model loading takes time

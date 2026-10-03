@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Government AI Assistant | सरकारी AI सहाय्यक</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:   #1a56db;
+      --primary-dk:#1648c0;
+      --accent:    #0e9f6e;
+      --bg:        #f3f4f6;
+      --white:     #ffffff;
+      --gray-1:    #f9fafb;
+      --gray-2:    #e5e7eb;
+      --gray-3:    #9ca3af;
+      --gray-4:    #6b7280;
+      --gray-5:    #374151;
+      --dark:      #111827;
+      --user-bg:   #1a56db;
+      --bot-bg:    #ffffff;
+      --radius:    14px;
+      --shadow:    0 2px 12px rgba(0,0,0,0.10);
+    }
+    html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; height: 100vh; max-width: 820px; margin: 0 auto; }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 38px; height: 38px; background: #fff2; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .header-title { font-size: 16px; font-weight: 700; line-height: 1.2; }
+    .header-sub   { font-size: 11px; opacity: .8; margin-top: 2px; }
+    .status-dot   { width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ── Language Toggle ──────────────────────────────────────── */
+    .lang-toggle { display: flex; background: rgba(255,255,255,0.15); border-radius: 20px; overflow: hidden; }
+    .lang-btn {
+      padding: 5px 14px; font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+      background: transparent; color: rgba(255,255,255,0.7); transition: all .2s;
+    }
+    .lang-btn.active { background: #fff; color: var(--primary); border-radius: 20px; }
+
+    /* ── Chat Window ──────────────────────────────────────────── */
+    .chat-window {
+      flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    /* ── Welcome card ─────────────────────────────────────────── */
+    .welcome {
+      background: var(--white); border-radius: var(--radius); padding: 24px;
+      box-shadow: var(--shadow); text-align: center; margin: 8px 0 4px;
+    }
+    .welcome-icon { font-size: 40px; margin-bottom: 10px; }
+    .welcome h2   { font-size: 18px; color: var(--dark); margin-bottom: 6px; }
+    .welcome p    { font-size: 13px; color: var(--gray-4); line-height: 1.6; }
+    .suggestions  { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .suggestion {
+      background: var(--gray-1); border: 1px solid var(--gray-2); border-radius: 20px;
+      padding: 7px 14px; font-size: 12px; color: var(--primary); cursor: pointer;
+      transition: all .2s; white-space: nowrap;
+    }
+    .suggestion:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── Messages ─────────────────────────────────────────────── */
+    .msg { display: flex; gap: 10px; max-width: 85%; animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .msg.user  { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot   { align-self: flex-start; }
+
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .msg.user .avatar { background: var(--user-bg); color: #fff; }
+    .msg.bot  .avatar { background: var(--gray-2); }
+
+    .bubble {
+      padding: 11px 15px; border-radius: var(--radius); font-size: 14px; line-height: 1.65;
+      box-shadow: var(--shadow);
+    }
+    .msg.user .bubble { background: var(--user-bg); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.bot  .bubble { background: var(--bot-bg);  color: var(--dark); border-bottom-left-radius: 4px; }
+
+    /* ── Sources ──────────────────────────────────────────────── */
+    .sources { margin-top: 10px; }
+    .sources-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-3); margin-bottom: 6px; }
+    .source-chip {
+      display: inline-flex; align-items: center; gap: 5px; background: var(--gray-1);
+      border: 1px solid var(--gray-2); border-radius: 6px; padding: 4px 10px;
+      font-size: 12px; color: var(--primary); text-decoration: none; margin: 3px 3px 3px 0;
+      transition: all .15s;
+    }
+    .source-chip:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── Confidence badge ─────────────────────────────────────── */
+    .meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .badge.high   { background: #d1fae5; color: #065f46; }
+    .badge.medium { background: #fef3c7; color: #92400e; }
+    .badge.low    { background: #fee2e2; color: #991b1b; }
+
+    /* ── Typing indicator ─────────────────────────────────────── */
+    .typing { display: flex; gap: 5px; padding: 14px 16px; }
+    .typing span {
+      width: 8px; height: 8px; background: var(--gray-3); border-radius: 50%;
+      animation: bounce .9s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .30s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    /* ── Error message ────────────────────────────────────────── */
+    .error-msg { background: #fee2e2; color: #991b1b; border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+
+    /* ── Input bar ────────────────────────────────────────────── */
+    .input-bar {
+      padding: 12px 16px; background: var(--white);
+      border-top: 1px solid var(--gray-2); flex-shrink: 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,.06);
+    }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    textarea {
+      flex: 1; border: 1.5px solid var(--gray-2); border-radius: 12px; padding: 10px 14px;
+      font-size: 14px; font-family: inherit; resize: none; outline: none;
+      max-height: 120px; min-height: 44px; line-height: 1.5; transition: border .2s;
+      background: var(--gray-1); color: var(--dark);
+    }
+    textarea:focus { border-color: var(--primary); background: #fff; }
+    textarea::placeholder { color: var(--gray-3); }
+    .send-btn {
+      width: 44px; height: 44px; border-radius: 12px; border: none;
+      background: var(--primary); color: #fff; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      transition: background .2s, transform .1s;
+    }
+    .send-btn:hover:not(:disabled) { background: var(--primary-dk); }
+    .send-btn:active:not(:disabled){ transform: scale(.93); }
+    .send-btn:disabled { background: var(--gray-2); cursor: not-allowed; }
+    .hint { font-size: 11px; color: var(--gray-3); margin-top: 6px; text-align: center; }
+
+    /* ── Scrollbar ────────────────────────────────────────────── */
+    .chat-window::-webkit-scrollbar { width: 4px; }
+    .chat-window::-webkit-scrollbar-track { background: transparent; }
+    .chat-window::-webkit-scrollbar-thumb { background: var(--gray-2); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo">🏛️</div>
+      <div>
+        <div class="header-title">Government AI Assistant</div>
+        <div class="header-sub"><span class="status-dot"></span>सरकारी AI सहाय्यक · Online</div>
+      </div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn"        data-lang="kok" onclick="setLang('kok')">कोंकणी</button>
+    </div>
+  </header>
+
+  <!-- Chat window -->
+  <div class="chat-window" id="chatWindow">
+
+    <!-- Welcome card -->
+    <div class="welcome" id="welcomeCard">
+      <div class="welcome-icon">🏛️</div>
+      <h2 id="welcomeTitle">Ask about Government Schemes</h2>
+      <p id="welcomeSub">Get accurate information about scholarships, internships, and government services — with sources.</p>
+      <div class="suggestions" id="suggestions">
+        <div class="suggestion" onclick="useSuggestion(this)">PM Scholarship benefit amount?</div>
+        <div class="suggestion" onclick="useSuggestion(this)">Scholarships for girl students?</div>
+        <div class="suggestion" onclick="useSuggestion(this)">Who is eligible for NMMSS?</div>
+        <div class="suggestion" onclick="useSuggestion(this)">Engineering internship schemes?</div>
+        <div class="suggestion" onclick="useSuggestion(this)">Overseas scholarship for SC?</div>
+      </div>
+    </div>
+
+  </div><!-- /chat-window -->
+
+  <!-- Input bar -->
+  <div class="input-bar">
+    <div class="input-row">
+      <textarea
+        id="inputBox"
+        rows="1"
+        placeholder="Ask about government schemes, scholarships, internships..."
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
+    </div>
+    <div class="hint" id="inputHint">Press Enter to send · Shift+Enter for new line</div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+  const API = 'http://127.0.0.1:8000/query';
+  let currentLang = 'en';
+  let isLoading   = false;
+
+  const i18n = {
+    en: {
+      placeholder:  'Ask about government schemes, scholarships, internships...',
+      welcomeTitle: 'Ask about Government Schemes',
+      welcomeSub:   'Get accurate information about scholarships, internships, and government services — with sources.',
+      hint:         'Press Enter to send · Shift+Enter for new line',
+      sources:      'Sources',
+      suggestions:  ['PM Scholarship benefit amount?','Scholarships for girl students?','Who is eligible for NMMSS?','Engineering internship schemes?','Overseas scholarship for SC?'],
+      error:        'Something went wrong. Please check the server is running and try again.',
+      serverError:  'Cannot reach server at http://127.0.0.1:8000 — make sure start_server.bat is running.',
+    },
+    kok: {
+      placeholder:  'सरकारी योजना, शिष्यवृत्ती, इंटर्नशिप बद्दल विचारा...',
+      welcomeTitle: 'सरकारी योजनांबद्दल विचारा',
+      welcomeSub:   'शिष्यवृत्ती, इंटर्नशिप आणि सरकारी सेवांबद्दल अचूक माहिती मिळवा — स्रोतांसह.',
+      hint:         'पाठवण्यासाठी Enter दाबा · नवीन ओळीसाठी Shift+Enter',
+      sources:      'स्रोत',
+      suggestions:  ['पीएम शिष्यवृत्तीचा लाभ किती?','मुलींसाठी शिष्यवृत्ती योजना?','NMMSS साठी कोण पात्र?','इंजिनिअरिंग इंटर्नशिप योजना?','SC साठी परदेश शिष्यवृत्ती?'],
+      error:        'काही चूक झाली. सर्व्हर चालू आहे का ते तपासा.',
+      serverError:  'http://127.0.0.1:8000 वर सर्व्हर सापडत नाही — start_server.bat चालू आहे का?',
+    }
+  };
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+    const t = i18n[lang];
+    document.getElementById('inputBox').placeholder   = t.placeholder;
+    document.getElementById('welcomeTitle').textContent = t.welcomeTitle;
+    document.getElementById('welcomeSub').textContent   = t.welcomeSub;
+    document.getElementById('inputHint').textContent    = t.hint;
+    // Update suggestions
+    const sugs = document.querySelectorAll('.suggestion');
+    t.suggestions.forEach((s, i) => { if (sugs[i]) sugs[i].textContent = s; });
+  }
+
+  function useSuggestion(el) {
+    document.getElementById('inputBox').value = el.textContent;
+    sendMessage();
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function scrollBottom() {
+    const w = document.getElementById('chatWindow');
+    w.scrollTop = w.scrollHeight;
+  }
+
+  function appendMsg(role, html) {
+    const welcome = document.getElementById('welcomeCard');
+    if (welcome) welcome.remove();
+
+    const w   = document.getElementById('chatWindow');
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    div.innerHTML = html;
+    w.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function userBubble(text) {
+    return `
+      <div class="avatar">👤</div>
+      <div class="bubble">${escHtml(text)}</div>`;
+  }
+
+  function typingIndicator() {
+    return `
+      <div class="avatar">🏛️</div>
+      <div class="bubble" style="padding:4px 8px">
+        <div class="typing"><span></span><span></span><span></span></div>
+      </div>`;
+  }
+
+  function botBubble(data) {
+    const conf   = data.confidence >= 0.8 ? 'high' : data.confidence >= 0.5 ? 'medium' : 'low';
+    const pct    = Math.round(data.confidence * 100);
+    const lang   = i18n[currentLang];
+    let srcHtml  = '';
+
+    if (data.sources && data.sources.length) {
+      const chips = data.sources.map(s =>
+        `<a class="source-chip" href="${s.source_url}" target="_blank" rel="noopener">
+           📄 ${escHtml(s.title.length > 45 ? s.title.slice(0,45)+'…' : s.title)}
+         </a>`
+      ).join('');
+      srcHtml = `
+        <div class="sources">
+          <div class="sources-label">${lang.sources}</div>
+          ${chips}
+        </div>`;
+    }
+
+    return `
+      <div class="avatar">🏛️</div>
+      <div>
+        <div class="bubble">
+          ${formatAnswer(data.answer)}
+          ${srcHtml}
+          <div class="meta">
+            <span class="badge ${conf}">Confidence ${pct}%</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function errorBubble(msg) {
+    return `
+      <div class="avatar">🏛️</div>
+      <div class="bubble"><div class="error-msg">⚠️ ${escHtml(msg)}</div></div>`;
+  }
+
+  function formatAnswer(text) {
+    // Convert markdown-style bullets and bold to HTML
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\s*\*\s+/g, '\n• ')
+      .split('\n')
+      .filter(l => l.trim())
+      .map(l => `<p style="margin:4px 0">${l}</p>`)
+      .join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function sendMessage() {
+    if (isLoading) return;
+    const box  = document.getElementById('inputBox');
+    const text = box.value.trim();
+    if (!text) return;
+
+    box.value = '';
+    box.style.height = 'auto';
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    // Show user message
+    appendMsg('user', userBubble(text));
+
+    // Show typing indicator
+    const typingDiv = appendMsg('bot', typingIndicator());
+
+    try {
+      const res = await fetch(API, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ text, language: currentLang }),
+      });
+
+      typingDiv.remove();
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        appendMsg('bot', errorBubble(err.detail || `Server error ${res.status}`));
+      } else {
+        const data = await res.json();
+        appendMsg('bot', botBubble(data));
+      }
+    } catch (e) {
+      typingDiv.remove();
+      const msg = e.message.includes('fetch') || e.message.includes('connect')
+        ? i18n[currentLang].serverError
+        : i18n[currentLang].error;
+      appendMsg('bot', errorBubble(msg));
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    box.focus();
+  }
+</script>
+</body>
+</html>
