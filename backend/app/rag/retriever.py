@@ -77,22 +77,26 @@ class Retriever:
                 f"{index_path}. Run indexing first: python -m app.rag.indexing"
             ) from exc
 
-        # Load corpus for BM25 sparse retrieval
+        # Build BM25 index from ALL chunks in ChromaDB (covers myScheme + PDF sources)
+        # This ensures BM25 and dense search operate on the same corpus.
+        all_chunks = self.collection.get(include=["documents", "metadatas"])
+        self._all_docs   = all_chunks["documents"] or []
+        self._all_metas  = all_chunks["metadatas"] or []
+
+        tokenized = [doc.lower().split() for doc in self._all_docs]
+        self.bm25 = BM25Okapi(tokenized)
+
+        # Keep the JSON corpus only for backwards-compat fallback
         with open(corpus_path, "r", encoding="utf-8") as f:
             self.schemes = json.load(f)
-
-        # Build BM25 index from full-document text
-        corpus_texts = [f"{s['title']} {s['content']}" for s in self.schemes]
-        tokenized_corpus = [doc.lower().split() for doc in corpus_texts]
-        self.bm25 = BM25Okapi(tokenized_corpus)
-        self.corpus_texts = corpus_texts
 
         # Embeddings model for query encoding (same model used during indexing)
         self.model = SentenceTransformer(model_name)
         logger.info(
-            "Retriever ready: %d documents, ChromaDB collection '%s'",
-            len(self.schemes),
+            "Retriever ready: %d chunks in ChromaDB collection '%s' (%d myScheme docs)",
+            len(self._all_docs),
             CHROMA_COLLECTION_NAME,
+            len(self.schemes),
         )
 
     def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
@@ -124,7 +128,7 @@ class Retriever:
                     "type": "dense",
                 })
 
-        # --- BM25 sparse search ---
+        # --- BM25 sparse search over all ChromaDB chunks ---
         bm25_scores = self.bm25.get_scores(query.lower().split())
         top_indices = sorted(
             range(len(bm25_scores)),
@@ -135,11 +139,11 @@ class Retriever:
         bm25_results: list[dict] = []
         for idx in top_indices:
             if bm25_scores[idx] > 0:
-                scheme = self.schemes[idx]
+                meta = self._all_metas[idx] if idx < len(self._all_metas) else {}
                 bm25_results.append({
-                    "content": self.corpus_texts[idx],
-                    "title": scheme.get("title", ""),
-                    "source_url": scheme.get("source_url", scheme.get("url", "")),
+                    "content": self._all_docs[idx],
+                    "title": meta.get("title", ""),
+                    "source_url": meta.get("source_url", ""),
                     "type": "bm25",
                     "bm25_score": round(float(bm25_scores[idx]), 4),
                 })
