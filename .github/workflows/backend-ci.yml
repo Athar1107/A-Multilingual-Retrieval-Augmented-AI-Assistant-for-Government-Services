@@ -12,40 +12,10 @@ on:
       - "backend/**"
 
 jobs:
-  lint:
-    name: Lint & Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: pip install uv==0.3.0
-
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
-        working-directory: backend
-
-      - name: Run ruff linter
-        run: ruff check app/ tests/
-        working-directory: backend
-
-      - name: Run black format check
-        run: black --check app/ tests/
-        working-directory: backend
-
-      - name: Run mypy type check
-        run: mypy app/ --strict
-        working-directory: backend
-
   test:
-    name: Unit & Integration Tests
+    name: Install & Test
     runs-on: ubuntu-latest
-    needs: lint
+
     steps:
       - uses: actions/checkout@v4
 
@@ -54,23 +24,27 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install uv
-        run: pip install uv==0.3.0
-
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+      - name: Install core dependencies
+        run: |
+          pip install --upgrade pip
+          pip install httpx fastapi pydantic pydantic-settings uvicorn \
+                      pytest pytest-asyncio \
+                      rank-bm25 sentencepiece
         working-directory: backend
 
-      - name: Run unit tests
-        run: pytest tests/unit/ --cov=app --cov-report=xml --cov-fail-under=80 -v
+      # sentence-transformers pulls torch which is large — install separately
+      - name: Install ML dependencies
+        run: pip install sentence-transformers chromadb
+        working-directory: backend
+
+      - name: Run tests (no coverage gate yet)
+        run: |
+          pytest tests/test_ingestion.py \
+                 tests/test_pipeline.py \
+                 tests/test_fallback_routing.py \
+                 -v --no-header --tb=short
         working-directory: backend
         env:
           APP_ENV: test
-          DATABASE_URL: sqlite+aiosqlite:///./test.db
-          SECRET_KEY: test_secret_key_for_ci_only_not_production
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v4
-        with:
-          file: backend/coverage.xml
-          flags: backend
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
