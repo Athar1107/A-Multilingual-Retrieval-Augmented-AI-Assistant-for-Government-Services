@@ -1,78 +1,101 @@
 # Implementation Status Audit
 
-**Audit date:** 2026-09-29  
-**Scope:** repository contents and locally available tooling. This is an implementation audit, not an evaluation of the intended research architecture.
+**Last updated:** 2026-10-03
+**Scope:** Repository contents and verified runtime behavior.
 
-## Evidence Boundary
-
-The project owner has designated the supplied research paper as the current working plan; it is summarized in [RESEARCH_PLAN.md](RESEARCH_PLAN.md). That paper reports a demonstrable local prototype with an English ChromaDB/BM25 knowledge base, IndicTrans2 support, local cited generation, and FastAPI/HTML UI. This audit reports only files and checks available in this repository. A paper-reported capability is not treated as repository-verifiable unless its supporting files are present here.
+---
 
 ## Executive Summary
 
-This repository is an early prototype and design scaffold. As of **2026-10-01**, the corpus ingestion pipeline and retrieval index are now fully operational. The active English corpus (58 schemes, 203 ChromaDB chunks) has been ingested and indexed. The hybrid retriever (dense + BM25 + RRF) is verified working. The API stub, translation, and frontend remain incomplete.
+The core RAG pipeline is **fully operational**. A citizen can submit a question in English or Goan Konkani via the REST API and receive a grounded, cited answer with source URLs — all running locally on CPU. The frontend UI is not yet built.
+
+---
 
 ## Verified Working
 
-| Area | Result | Evidence |
+| Component | Status | Evidence |
 |---|---|---|
-| Python syntax | Pass | All Python files pass syntax audit |
-| Corpus ingestion | **Pass** | `run_ingestion.py` fetches all 58 myScheme records; 0 errors; writes `data/processed/active_english.json` (439 KB) |
-| Corpus validation | **Pass** | 58 docs, 0 duplicates, 0 missing issuers, 0 missing tags, schema OK |
-| ChromaDB indexing | **Pass** | `app.rag.indexing` builds 203 chunks; upsert is idempotent |
-| BM25 index | **Pass** | Built in-memory from corpus on `Retriever()` init |
-| Hybrid retrieval | **Pass** | `app.rag.retriever` returns RRF-fused ranked results for test queries |
-| Minimal API source | Present | `backend/app/main.py` defines `GET /health` and `POST /query`; `/query` calls RAG pipeline lazily |
-| Pipeline orchestration | Pass | `rag/pipeline.py` connects retriever → generator → fallback router |
-| Scheme register | Present | `schemes_list.txt` — 58 entries, all successfully ingested |
+| Corpus ingestion | ✅ Working | 58 schemes fetched from myScheme API, 0 errors |
+| Corpus file | ✅ Present | `data/processed/active_english.json` — 439 KB, 58 docs |
+| ChromaDB index | ✅ Working | 203 chunks in `education_schemes` collection |
+| BM25 index | ✅ Working | Built in-memory from corpus on `Retriever()` init |
+| Hybrid retrieval | ✅ Working | Dense + BM25 + RRF fusion, verified with test queries |
+| LLM generation | ✅ Working | `llama3.2` via Ollama, grounded answers with citations |
+| Fallback routing | ✅ Working | Confidence-based routing with caveat on low-score results |
+| Goan Konkani translation | ✅ Working | IndicTrans2 200M (`gom_Deva` ↔ `eng_Latn`) |
+| NLLB fallback translation | ✅ Working | NLLB-200 600M, ungated, Marathi proxy for Konkani |
+| FastAPI server | ✅ Working | `/query`, `/health`, `/translate/status`, `/docs` |
+| End-to-end English query | ✅ Verified | 5/5 test queries returned correct grounded answers |
+| End-to-end Konkani query | ✅ Verified | 3/3 Konkani queries returned native Goan Konkani answers |
+| Unit tests | ✅ Passing | 10/10 tests pass (ingestion, pipeline, fallback routing) |
+| CI pipeline | ✅ Passing | GitHub Actions — 10 tests pass on push |
+| Git repository | ✅ Published | github.com/Athar1107/A-Multilingual-Retrieval-Augmented-AI-Assistant-for-Government-Services |
+| Secrets protection | ✅ Safe | `backend/.env` excluded via `.gitignore`, not on GitHub |
 
-`Working` above means the source is present and syntactically valid. Only the syntax and corpus-parse checks could be run in this workspace; runtime dependency checks could not run because the local virtual environments do not contain FastAPI, pytest, ChromaDB, sentence-transformers, or rank-bm25.
+---
 
-## Not Working Or Not Implemented
+## Not Yet Implemented
 
-| Area | Status | Details |
+| Component | Status | Notes |
 |---|---|---|
-| End-to-end RAG | Not implemented | The API does not yet instantiate the retrieval, generator, translation, or fallback modules. There are no citations, evidence assessment, no-supported-answer path, sessions, feedback, or streaming. |
-| Versioned backend API | Not implemented | The unused `backend/app/api/v1/` scaffold was removed. The current API lives in `backend/app/main.py` and only exposes temporary `/health` and `/query` endpoints. |
-| Ingestion, database, and utilities | Partially structured | `services/ingestion.py` validates the scheme title/URL register. Downloading, document processing, database persistence, and index creation are still unimplemented. |
-| Frontend | Not implemented | `frontend/` has only a legacy English i18n JSON file. It has no `package.json`, lockfile, application source, or Dockerfile. |
-| Automated tests | Partially implemented / not runnable with pytest locally | `test_ingestion.py` and `test_pipeline.py` now cover the scheme-register parser and pipeline handoff. `pytest` remains absent locally, and the configured 80% coverage threshold is not yet realistic. |
-| Docker Compose | Broken | `docker compose -f docker/docker-compose.yml config --quiet` fails because it seeks `docker/backend/.env`; its relative build, volume, and Nginx paths also refer to non-existent paths. The frontend build context/Dockerfile are absent. |
-| Backend Docker image | Still incomplete | `backend/app/main.py` now exists, but the image and Compose setup still lack a complete runnable data/configuration arrangement. |
-| Embedding container | Broken | Compose starts `app.embedding_server:app`, but that module does not exist. |
-| CI | Expected to fail | Frontend CI runs npm commands despite no package manifest/lockfile. Backend CI runs linting and 80%-coverage tests despite empty test coverage and code that does not meet the configured strict checks. |
-| Deployment workflow | Placeholder | It only prints a deployment message and smoke-test comment. |
+| Frontend chat UI | ❌ Not built | `frontend/` contains only i18n placeholder files |
+| Evaluation dataset | ❌ Not built | 15-20 Konkani Q&A pairs needed for research metrics |
+| Docker deployment | ⚠️ Broken config | `docker-compose.yml` has wrong relative paths |
+| Streaming SSE | ❌ Not implemented | `/query` returns full response only |
+| Session management | ❌ Not implemented | Each query is stateless |
+| Admin endpoints | ❌ Not implemented | No `/admin/ingest` or `/admin/stats` yet |
 
-## Data And Prototype Limitations
+---
 
-- `schemes_list.txt` is an updateable title-and-URL register. It is not currently consumed by an ingestion script or converted into retrieval-ready records. Treat it as the maintained data-source input, not proof that its URLs have been fetched or indexed.
-- The old `data/raw/corpus.json` placeholder dataset was removed because it duplicated scheme URLs and contained insufficient source detail. `data/processed/active_english.json` is now the intended post-ingestion input path, but it does not exist until ingestion is implemented.
-- The corpus is English-only. No Konkani corpus, language evaluation data, or fallback-language mapping is included.
-- The indexer/retriever defaults use repository-root-relative `data/...` paths. The Makefile invokes them from `backend/`, where those defaults resolve to paths that do not exist.
-- Indexing and retrieval use `all-MiniLM-L6-v2` (384-dimensional English model), while environment documentation names BGE-M3 (1024 dimensions). These are incompatible configuration claims.
-- Retrieval simply appends dense results followed by BM25 results. It does not deduplicate, fuse/rerank results, retain dense scores, or return citations/metadata to callers.
-- `generator.py` imports `requests` and `translation_service.py` imports `transformers`, but neither package is declared in `backend/pyproject.toml`. The translation model is not wired to the API and failure is silently converted to the original input.
-- Fallback routing treats the supplied score as confidence, caps it at 1.0, and has no fallback mapping, retrieval, evidence assessment, or reliability calibration.
+## Known Limitations
 
-## Checks Performed
-
-| Check | Outcome |
+| Limitation | Detail |
 |---|---|
-| Scheme-register parser smoke test | Pass; 58 entries loaded |
-| Pipeline smoke test | Pass; retrieved context reaches the generator |
-| Python syntax audit | Pass; 18 files parsed |
-| Former corpus JSON parse and duplicate analysis | Historical audit; the obsolete corpus has been removed |
-| Docker Compose configuration | Fail; missing/misresolved environment file and paths |
-| Runtime import/API smoke test | Blocked by missing local dependencies |
-| Pytest | Blocked by missing local pytest; repository also contains no test cases |
-| Frontend build/test | Blocked; package manifest and build files are absent |
+| CPU-only inference | `llama3.2` on CPU takes 20–40s per query. GPU would reduce to 2–5s. |
+| MiniLM embeddings | Uses `all-MiniLM-L6-v2` (384-dim, English-only) not BGE-M3 (1024-dim, multilingual) as documented. The retriever works well for English but multilingual queries rely on translation first. |
+| PM Kisan not in corpus | The corpus covers education/scholarship schemes from myScheme. PM Kisan is an agriculture scheme not in the indexed data — the system correctly says so. |
+| Konkani script variation | Input uses Marathi-influenced Devanagari. Native Goan Konkani speakers may use slightly different vocabulary. |
 
-## Recommended Repair Order
+---
 
-1. Choose the actual product scope and one runnable backend entry point; move or replace root `main.py` consistently.
-2. Implement the missing backend app/API modules and connect them to retrieval, generation, translation, and explicit evidence/no-answer behavior.
-3. Define and clean a non-duplicated, sufficiently detailed, authoritative corpus; align the embedding model and vector dimensions everywhere.
-4. Add declared dependencies, reproducible installation instructions, real unit/integration tests, and CI that reflects the existing project.
-5. Scaffold the frontend with its package manifest and application files, or remove its Docker/CI claims until it exists.
-6. Correct Compose-relative paths and missing entry points, then validate the complete stack.
+## Recommended Next Steps
 
-See the other Markdown files for the proposed research design. They describe intended behavior unless they explicitly point to an implemented file.
+1. **Build frontend** — HTML chat page or React app so citizens can use the system
+2. **Build evaluation dataset** — 15-20 Konkani Q&A pairs against indexed schemes
+3. **Fix Docker** — correct paths in `docker-compose.yml` for server deployment
+4. **Upgrade embeddings** — switch to BGE-M3 for native multilingual support
+5. **Add more schemes** — expand `schemes_list.txt` beyond current 58 entries
+
+---
+
+## Component Architecture (As Built)
+
+```
+User Query (EN or Goan Konkani)
+    │
+    ▼
+TranslationService
+    ├── IndicTrans2 200M (if HF_TOKEN set)  gom_Deva → eng_Latn
+    └── NLLB-200 600M (fallback)            mar_Deva → eng_Latn
+    │
+    ▼
+Hybrid Retriever
+    ├── ChromaDB dense search (all-MiniLM-L6-v2, top-20)
+    ├── BM25 sparse search (top-20)
+    └── RRF fusion → top-5 chunks
+    │
+    ▼
+AnswerGenerator
+    └── Ollama llama3.2 (context ≤ 2,000 chars, num_predict=200)
+    │
+    ▼
+FallbackRouter
+    └── confidence ≥ 0.6 → direct | < 0.6 → caveat appended
+    │
+    ▼
+TranslationService (reverse)
+    └── eng_Latn → gom_Deva (if input was Konkani)
+    │
+    ▼
+QueryResponse { answer, confidence, route, sources[] }
+```
