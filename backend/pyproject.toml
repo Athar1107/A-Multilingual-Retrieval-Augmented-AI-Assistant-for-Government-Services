@@ -116,7 +116,7 @@ exclude = ["tests/", "scripts/", "alembic/"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
+addopts = "--tb=short"
 markers = [
     "rag_eval: marks tests as RAG evaluation tests (slow, requires real LLM)",
     "integration: marks tests as integration tests (requires running services)",

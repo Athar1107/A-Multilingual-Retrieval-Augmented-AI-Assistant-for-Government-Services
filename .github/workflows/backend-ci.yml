@@ -24,27 +24,26 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install core dependencies
+      - name: Install test dependencies
         run: |
           pip install --upgrade pip
-          pip install httpx fastapi pydantic pydantic-settings uvicorn \
-                      pytest pytest-asyncio \
-                      rank-bm25 sentencepiece
+          pip install \
+            httpx \
+            fastapi \
+            pydantic \
+            pydantic-settings \
+            pytest \
+            pytest-asyncio \
+            sentencepiece
         working-directory: backend
 
-      # sentence-transformers pulls torch which is large — install separately
-      - name: Install ML dependencies
-        run: pip install sentence-transformers chromadb
-        working-directory: backend
-
-      - name: Run tests (no coverage gate yet)
+      - name: Run tests
         run: |
           pytest tests/test_ingestion.py \
                  tests/test_pipeline.py \
                  tests/test_fallback_routing.py \
-                 -v --no-header --tb=short
+                 -v --tb=short
         working-directory: backend
         env:
-          APP_ENV: test
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
