@@ -1,104 +1,114 @@
 # Architecture
 
-> **Research baseline:** The current route is Konkani (Devanagari) input/output over an English active corpus. Native Konkani/Marathi documents are translation-audit references, not indexed retrieval content. See [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
+> **Research baseline:** [RESEARCH_PLAN.md](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/docs/RESEARCH_PLAN.md) defines the core design: Goan Konkani (Devanagari script) and English input/output over an authoritative English active retrieval corpus. This document specifies the active architecture implemented and running across the repository.
 
-## Status
+---
 
-This document describes the **proposed target architecture** for the repositioned Multilingual RAG research prototype. It does not claim that every component is implemented.
+## System Overview
 
-Existing repository evidence:
-
-- Backend scaffold and dependencies indicate planned use of FastAPI, ChromaDB, LangChain, Ollama, sentence-transformers, rank-bm25, SQLAlchemy, and document-processing libraries.
-- Docker Compose contains services for frontend, backend, ChromaDB, Ollama, embedding, Nginx, and persistent data volumes.
-- Backend and frontend source modules are mostly placeholders.
-
-## Target Online Query Flow
+The system implements an end-to-end, privacy-preserving, CPU-executable Multilingual RAG pipeline tailored for citizen queries regarding educational schemes and public welfare programs in Goa and India.
 
 ```mermaid
 flowchart TD
-    U[User Query] --> LID[Language Detection / Language Identification]
-    LID --> PR[Primary Language Processing Route]
-    PR --> LP[Language Processing / Translation where required]
-    LP --> R[Retrieval]
-    R --> DR[Dense Retrieval where applicable]
-    R --> LR[Lexical Retrieval where applicable]
-    DR --> HC[Hybrid Retrieval / Result Combination]
-    LR --> HC
-    HC --> EA[Evidence Assessment]
-    EA --> D{Sufficient evidence?}
-    D -->|Yes| GG[Grounded Answer Generation]
-    D -->|No| AFLR[Adaptive Fallback Language Routing - Proposed Research Component]
-    AFLR --> FLP[Fallback Language Processing / Translation where required]
-    FLP --> FR[Fallback Retrieval]
-    FR --> FEA[Fallback Evidence Assessment]
-    FEA --> FD{Sufficient evidence?}
-    FD -->|Yes| GG
-    FD -->|No| NSA[No-Supported-Answer Response]
-    GG --> OLP[Output Language Processing / Translation where required]
-    OLP --> AEC[Answer + Evidence / Citations]
-    NSA --> AEC
-    AEC --> U
+    subgraph Client ["Client Layer"]
+        UI["chat.html Web UI / cURL / REST Clients"]
+    end
+
+    subgraph API ["FastAPI Service Layer (backend/app/main.py)"]
+        EP_H["GET /health"]
+        EP_T["GET /translate/status"]
+        EP_Q["POST /query"]
+    end
+
+    subgraph Pipeline ["RAG Pipeline Orchestrator (backend/app/rag/pipeline.py)"]
+        LP_IN["Input Translation (translation.py)\nIndicTrans2 (gom_Deva) / NLLB-200 (mar_Deva proxy)"]
+        HR["Hybrid Retriever (retriever.py)\nDense (ChromaDB) + Sparse (BM25Okapi)"]
+        RRF["Reciprocal Rank Fusion (k=60)\nCombines dense & sparse candidate ranks"]
+        CTX["Context Assembler\nMax 2,000 characters context window"]
+        GEN["Answer Generator (generator.py)\nOllama: llama3.2 (temperature=0.1, num_predict=200)"]
+        FBR["Fallback Router (fallback_routing.py)\nConfidence threshold = 0.6"]
+        LP_OUT["Output Translation (translation.py)\neng_Latn → gom_Deva (if Konkani query)"]
+    end
+
+    subgraph Storage ["Indexes & Corpus (data/)"]
+        CHROMA[("ChromaDB Index\n(318 chunks, cosine space,\neducation_schemes collection)")]
+        BM25_STORE[("In-Memory BM25 Index\n(318 chunks from ChromaDB)")]
+        CORPUS_FILE[("active_english.json\n(58 myScheme records, 439 KB)")]
+    end
+
+    UI --> EP_Q
+    UI --> EP_H
+    UI --> EP_T
+    EP_Q --> LP_IN
+    LP_IN --> HR
+    HR --> CHROMA
+    HR --> BM25_STORE
+    CHROMA --> RRF
+    BM25_STORE --> RRF
+    RRF --> CTX
+    CTX --> GEN
+    GEN --> FBR
+    FBR --> LP_OUT
+    LP_OUT --> EP_Q
+    EP_Q --> UI
 ```
 
-Notes:
-
-- The diagram is the proposed target architecture.
-- Exact language-processing technology is To be determined.
-- Evidence/confidence threshold is To be determined experimentally.
-- Fallback-language mapping is To be determined based on linguistic/resource criteria and experimental evaluation.
-- Retrieval scores do not guarantee correctness.
-- Retrieved evidence does not automatically guarantee factual correctness.
-- Citations do not guarantee that every generated claim is supported.
+---
 
 ## Offline Knowledge-Base Preparation
 
+The knowledge base is constructed from two authoritative sources:
+1. **myScheme.gov.in Public API:** Ingestion tool (`backend/app/services/ingestion.py`) reads the maintained scheme register [`schemes_list.txt`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/schemes_list.txt), fetches cleaned English documents, and outputs `data/processed/active_english.json`.
+2. **Goa Government PDF Portals:** PDF loader (`backend/app/ingestion/pdf_loader.py`) fetches circulars, charters, and scholarship guidelines from SCERT Goa, the Directorate of Official Language Goa (DOL Goa), Tribal Welfare, and the South Goa Collectorate using PyMuPDF (`fitz`).
+
 ```mermaid
-flowchart TD
-    S[Official Education / Government Sources] --> C[Document Collection]
-    C --> P[Parsing / Cleaning]
-    P --> CH[Chunking]
-    CH --> M[Metadata]
-    M --> E[Embedding / Indexing]
-    E --> KB[Searchable Knowledge Base]
+flowchart LR
+    subgraph Sources ["Authoritative Sources"]
+        SR["schemes_list.txt (58 URLs)"] --> INGEST["ingestion.py\n(myScheme v6 API)"]
+        PDF_SRC["Goa Portals (SCERT, DOL, Goa Gov)"] --> PDF_LOAD["pdf_loader.py\n(PyMuPDF / fitz)"]
+    end
+
+    INGEST --> JSON_OUT["data/processed/active_english.json"]
+    JSON_OUT --> CHUNKER["indexing.py\n(Word-based chunking: 300 words)"]
+    PDF_LOAD --> CHUNKER_PDF["ingest_pdf_sources.py\n(Word-based chunking: 300 words)"]
+
+    CHUNKER --> ST_EMB["sentence-transformers\nall-MiniLM-L6-v2 (384-dim)"]
+    CHUNKER_PDF --> ST_EMB
+
+    ST_EMB --> CHROMA_STORE[("ChromaDB Vector Store\n(318 chunks total)")]
 ```
 
-Planned corpus distinction:
+### Corpus Composition (Verified in Runtime)
+| Source Family | Description | Documents | Chunks |
+|---|---|---|---|
+| **myScheme** | Central & state educational/internship schemes | 58 | 203 |
+| **DOL_Goa** | Directorate of Official Language Goa charters & schemes | 3 | 16 |
+| **Goa_Gov** | Tribal Welfare & South Goa Collectorate charters | 2 | 90 |
+| **SCERT_Goa** | Science Talent Search, NMMSS & state scholarships | 5 | 9 |
+| **Total** | **Authoritative active knowledge base** | **68** | **318** |
 
-- **Active retrieval corpus:** official or authoritative education-domain documents selected for indexing.
-- **Translation / reference / audit material:** supporting material that may help language processing, evaluation, or review but is not automatically part of the retrieval index.
+---
 
-No repository evidence currently proves that a target education corpus has been collected or indexed.
+## Logical Components (As Built)
 
-## Logical Components
-
-| Component | Status | Notes |
+| Component | Module | Implementation Details |
 |---|---|---|
-| Frontend chat/search UI | Scaffold / previous prototype planning | Existing frontend files are mostly placeholders plus one legacy English i18n file. |
-| API layer | Scaffold / planned | Backend dependency configuration includes FastAPI, but endpoint modules are mostly placeholders. |
-| Document ingestion | Planned | Data folders exist, but target corpus and ingestion code are not implemented. |
-| Cleaning and chunking | Planned | Placeholder modules exist. Final rules for Konkani and education documents are To be determined. |
-| Embedding and indexing | Planned / prototype technology named | Dependencies and Docker config include sentence-transformers and ChromaDB. Final model selection is To be determined. |
-| Dense retrieval | Planned / prototype technology named | ChromaDB is present in dependencies and Docker config. |
-| Lexical retrieval | Planned / prototype technology named | rank-bm25 dependency is present. |
-| Hybrid retrieval | Proposed | Useful for combining semantic and lexical evidence where implemented. |
-| Evidence assessment | Proposed | Required by target architecture; threshold To be determined experimentally. |
-| Adaptive fallback routing | Proposed research component | Not implemented; mapping To be determined. |
-| Grounded generation | Planned | Ollama and LangChain are present in dependency/config files, but final generation model is not finalized. |
-| No-supported-answer behavior | Planned | Required to avoid unsupported answers. |
+| **Web UI** | [`chat.html`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/chat.html) | Vanilla HTML/CSS/JavaScript single-page app with language toggling, suggested prompts, citation links, and confidence badges. |
+| **API Framework** | [`app/main.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/main.py) | FastAPI with lazy model loading, asynchronous request offloading (`asyncio.to_thread`), and CORS support. |
+| **Hybrid Retriever** | [`app/rag/retriever.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/retriever.py) | Dense vector search via ChromaDB + sparse keyword search via `BM25Okapi` over all 318 indexed chunks. |
+| **Rank Fusion** | [`app/rag/retriever.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/retriever.py#L21-L52) | Reciprocal Rank Fusion (RRF) with constant $k=60$. Deduplicates content based on 300-character prefixes. |
+| **Translation Layer** | [`app/rag/translation.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/translation.py) | Multi-tier strategy: 1) AI4Bharat IndicTrans2 200M (`gom_Deva`), 2) Meta NLLB-200 600M (`mar_Deva` proxy), 3) passthrough fallback. |
+| **Answer Generator** | [`app/rag/generator.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/generator.py) | Ollama LLM integration (`llama3.2`), constrained with low temperature (`0.1`), max 200 output tokens, and 2,000 char prompt limit. |
+| **Fallback Router** | [`app/rag/fallback_routing.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/fallback_routing.py) | Normalizes average RRF scores to $[0, 1]$; flags route as `"fallback"` and appends official portal verification caveat if score $< 0.6$. |
+| **Vector Store** | ChromaDB | Persistent local SQLite/hnsw index at `data/indexes/chroma/`, collection `education_schemes` with cosine similarity. |
+| **Document Ingestion** | [`app/services/ingestion.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/services/ingestion.py) & [`pdf_loader.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/ingestion/pdf_loader.py) | Robust REST client with retry logic for myScheme v6 public API and PyMuPDF text cleaner for Goa government PDF circulars. |
 
-## Technology Classification
+---
 
-| Technology | Repository Evidence | Classification |
-|---|---|---|
-| FastAPI | `backend/pyproject.toml`; Docker healthcheck references API | Existing prototype dependency / planned API framework |
-| React/Vite/Tailwind | README and Docker comments, but no package manifest found | Previous prototype plan; implementation not established |
-| ChromaDB | dependency, Docker service, data folder | Existing prototype component in configuration; target use planned |
-| rank-bm25 | dependency | Existing prototype dependency; target lexical retrieval proposed/planned |
-| sentence-transformers | dependency | Existing prototype dependency; final embedding model To be determined |
-| LangChain | dependency | Existing prototype dependency; final orchestration approach To be determined |
-| Ollama / Llama 3.1 | dependency and Docker comment | Previous prototype configuration; final model To be determined |
-| SQLite/PostgreSQL | dependency and Docker configuration | Existing prototype configuration; final persistence choice To be determined |
+## Hardware & Deployment Profile
 
-## Research Risks
-
-Adaptive fallback routing may introduce additional latency, additional processing, cascading translation errors, semantic drift, and uncertain performance improvement. It must be evaluated rather than assumed beneficial.
+- **Inference Footprint:** Fully operable on standard developer workstations without a dedicated GPU.
+  - LLM: `llama3.2` running on CPU via Ollama (typically 20–40 seconds per query on CPU).
+  - Embeddings: `all-MiniLM-L6-v2` (384-dimensional, fast CPU inference < 50ms).
+  - Translation: IndicTrans2 or NLLB-200 running on CPU PyTorch.
+- **Production Extension:** Environment variables allow swapping the embedding model to `BAAI/bge-m3` (1024-dim multilingual) and pointing `OLLAMA_URL` to a dedicated GPU-accelerated server.

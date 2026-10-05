@@ -1,142 +1,91 @@
-# Prompts
+# Prompts & Model Conditioning
 
-> **Research baseline:** Prompts must preserve evidence-backed answers and protected inline citations for the Konkani-to-English-pivot route. See [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
+> **Research baseline:** Prompts must enforce strict evidence-based answering, cite official scheme names, and preserve factual fidelity across English and Konkani. See [RESEARCH_PLAN.md](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/docs/RESEARCH_PLAN.md).
 
-## Status
+---
 
-These are target prompt specifications for the planned Multilingual RAG system. They are not evidence that the prompts are implemented.
+## 1. Implemented LLM Generation Prompts ([`backend/app/rag/generator.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/generator.py))
 
-Prompt wording should be tested and versioned during implementation. Prompts must not instruct the model to fabricate answers when evidence is unavailable.
+The answer generation module uses Ollama (`llama3.2`) with low temperature and an explicit length cap to prevent rambling, hallucinations, and CPU timeouts.
 
-## System Instruction
-
-Purpose: constrain the assistant to grounded, education-domain answers.
-
-Template:
-
+### System Prompt
 ```text
-You are a multilingual education-scheme information assistant.
-Answer only using the provided evidence.
-If the evidence does not support an answer, say that a supported answer is not available from the current sources.
-Do not invent eligibility rules, benefits, deadlines, document requirements, application steps, URLs, departments, or language mappings.
-Preserve citation markers exactly.
-Use clear language appropriate for the user's query and the configured output language.
+You are a helpful government services assistant. Answer questions based ONLY on the provided context about government schemes. If the context does not contain enough information to answer the question, say so clearly. Always be accurate and cite the scheme names when relevant. Keep answers concise (2-4 sentences).
 ```
 
-## Grounded RAG Generation Prompt
-
+### User Prompt Template
 ```text
-User query:
-{query}
+Context:
+{context}
 
-Output language:
-{output_language}
+Question: {query}
 
-Retrieved evidence:
-{evidence}
-
-Instructions:
-1. Answer only from the retrieved evidence.
-2. Include citations for factual claims using the provided citation markers.
-3. If evidence is partial, state the limitation.
-4. If evidence is insufficient, return the no-supported-answer response instead of guessing.
-5. Do not add external knowledge.
+Answer in 3-5 sentences based only on the context. Mention the scheme name.
+If the context lacks information, say so clearly.
 ```
 
-## Evidence / Citation Behavior
+### Runtime Generation Parameters
+- **Context Truncation:** Trimmed to `MAX_CONTEXT_CHARS = 2000` to prevent LLM context-window overflow and keep CPU inference responsive.
+- **Temperature:** `0.1` (minimizes creative variation, enforces strict factual grounding).
+- **Token Output Limit:** `num_predict = 200` (ensures fast responses under CPU inference).
+- **HTTP Timeout:** `180.0` seconds (generous threshold for local CPU computation).
+
+---
+
+## 2. Implemented Fallback Routing Caveat ([`backend/app/rag/fallback_routing.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/fallback_routing.py#L10-L14))
+
+When the normalized RRF retrieval score is below `0.6`, the system appends the official fallback caveat:
 
 ```text
-Use citations only for evidence that was supplied in the context.
-Do not cite a source for a claim unless that source supports the claim.
-Do not imply that citations guarantee correctness.
-When evidence conflicts or is unclear, report the uncertainty.
+⚠️ I found some related information but I'm not confident enough to give a definitive answer. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.
 ```
 
-## No-Supported-Answer Prompt
+---
 
+## 3. Implemented Translation Language Formatting ([`backend/app/rag/translation.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/translation.py))
+
+### IndicTrans2 Language Tagging
+IndicTrans2 requires explicit source and target language prefix tags prepended to the input text:
+- **Konkani (Devanagari) to English:**
+  ```text
+  gom_Deva eng_Latn {text}
+  ```
+- **English to Konkani (Devanagari):**
+  ```text
+  eng_Latn gom_Deva {text}
+  ```
+- Model settings: `max_length=256`, `num_beams=4`.
+
+### NLLB-200 Language Tagging
+- **Konkani (via Marathi proxy) to English:**
+  - `src_lang = "mar_Deva"`, `forced_bos_token_id = "eng_Latn"`
+- **English to Konkani (via Marathi proxy):**
+  - `src_lang = "eng_Latn"`, `forced_bos_token_id = "mar_Deva"`
+- Model settings: `max_length=256`, `num_beams=4`.
+
+---
+
+## 4. Evaluation Rubric & Prompts (For Gold-Set Testing)
+
+For upcoming stage-isolated benchmark evaluations:
+
+### Faithfulness / Groundedness Assessment
 ```text
-The available evidence is insufficient to answer this query.
-Respond in {output_language}.
-State that a supported answer is not available from the current sources.
-Do not provide an unsupported answer.
-Where appropriate, suggest checking the relevant official education department or scheme portal without inventing a specific URL.
+Question: {query}
+Retrieved Context: {context}
+Generated Answer: {answer}
+
+Task: Evaluate whether every factual claim (eligibility, monetary amount, criteria, scheme name) in the Generated Answer is directly supported by the Retrieved Context.
+Assign:
+- "Faithful": All claims supported by context.
+- "Partially Faithful": Mostly supported, minor unverified detail.
+- "Hallucinated": Contains specific unsupported numbers, criteria, or rules.
 ```
 
-## Language Processing / Translation Prompt
-
-Language processing may be used for query translation, fallback routing, or output-language handling. Exact languages and models are To be determined.
-
+### Translation Fidelity Assessment
 ```text
-Translate or rewrite the text only for language-processing purposes.
-Preserve meaning, names, dates, amounts, citation markers, and official terms.
-Do not add facts.
-If a term has no reliable equivalent, keep the original term and flag uncertainty.
+Original ({source_lang}): {source_text}
+Translation ({target_lang}): {translated_text}
 
-Source language: {source_language}
-Target language: {target_language}
-Text:
-{text}
+Task: Verify that proper nouns (names of scholarships, ministries, portals) and monetary figures (e.g. ₹2,500) were accurately preserved without distortion.
 ```
-
-## Fallback Routing Prompt
-
-Adaptive Fallback Language Routing is proposed and not implemented.
-
-```text
-Primary route evidence status:
-{primary_evidence_status}
-
-Query:
-{query}
-
-Instructions:
-Decide whether fallback routing should be attempted under the configured research policy.
-Do not choose a fallback language unless it is explicitly configured.
-Fallback-language mapping is not inferred from the query.
-Return one of:
-- use_primary
-- attempt_configured_fallback
-- no_supported_answer
-```
-
-## Evaluation Prompts
-
-Evaluation prompts may be used by human reviewers or automated evaluators. They must not create fabricated scores.
-
-Faithfulness review:
-
-```text
-Question:
-{query}
-
-Answer:
-{answer}
-
-Evidence:
-{evidence}
-
-Assess whether each factual claim in the answer is supported by the evidence.
-Mark unsupported, partially supported, and supported claims.
-Do not use outside knowledge.
-```
-
-Language-quality review:
-
-```text
-Source text:
-{source_text}
-
-Translated or generated text:
-{candidate_text}
-
-Assess whether meaning is preserved, terminology is appropriate, and citation markers are unchanged.
-Language pair:
-{language_pair}
-```
-
-## Open Decisions
-
-- Final prompt versions: To be determined.
-- Final output-language policy: To be determined.
-- Final fallback policy: To be determined.
-- Evaluation rubric and dataset: To be determined.

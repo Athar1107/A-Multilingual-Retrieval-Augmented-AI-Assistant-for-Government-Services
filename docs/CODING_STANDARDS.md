@@ -1,69 +1,77 @@
 # Coding Standards
 
-> **Research baseline:** Preserve the Konkani (Devanagari) user-language / English active-corpus boundary and keep translation-audit data out of active retrieval code. See [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
+> **Research baseline:** Preserve the Konkani (Devanagari) user-language / English active-corpus boundary and maintain strict separation between active indexed retrieval content and translation-audit references. See [RESEARCH_PLAN.md](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/docs/RESEARCH_PLAN.md).
+
+---
 
 ## Purpose
 
-These standards guide future implementation work. They are engineering standards, not research claims.
+These standards guide maintenance and extension of the Multilingual RAG assistant codebase. They ensure modularity, fast test cycles, clean type validation, and research reproducibility.
 
-## General Principles
+---
 
-- Keep code consistent with the documented Multilingual RAG architecture.
-- Distinguish implemented behavior from proposed or planned behavior in comments, docs, and tests.
-- Do not hardcode unsupported language mappings, benchmark targets, model names, or thresholds.
-- Prefer small, testable components with explicit inputs and outputs.
-- Preserve provenance and reproducibility for corpus, evaluation, and model configuration.
+## Python Backend Standards
 
-## Python Backend
+The backend is built with Python 3.11+ using **FastAPI**, **Pydantic v2**, **ChromaDB**, and **PyTorch**.
 
-Expected standards if the FastAPI backend is implemented:
+### 1. Separation of Concerns
+Maintain clean decoupling across pipeline stages:
+- **`app.config`:** Central repository for environment configurations, file paths, and tunable thresholds (`CONFIDENCE_THRESHOLD`, `CHUNK_SIZE_WORDS`, `TOP_K_DEFAULT`).
+- **`app.schemas`:** Strict Pydantic models for all API request and response bodies (`QueryRequest`, `QueryResponse`, `SourceCitation`).
+- **`app.rag.retriever`:** Hybrid retrieval and Reciprocal Rank Fusion logic only.
+- **`app.rag.generator`:** Ollama LLM prompt formulation, connection management, and answer generation.
+- **`app.rag.fallback_routing`:** Confidence thresholding and caveat appending.
+- **`app.rag.translation`:** Translation abstractions and backend selection.
+- **`app.rag.pipeline`:** High-level orchestrator connecting all stages.
 
-- Use type hints for public functions.
-- Keep API models explicit and validated.
-- Keep retrieval, evidence assessment, generation, and language processing as separable services.
-- Make thresholds and model names configuration-driven.
-- Avoid broad exception swallowing.
-- Do not log sensitive user data by default.
-- Unit-test behavior before relying on integration tests.
+### 2. Fast Startup & Lazy Loading
+- **Never load heavy ML models at module import time.**
+- In [`backend/app/main.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/main.py), use lazy initialization (`_get_pipeline()`) so Uvicorn boots in sub-second time.
+- Offload synchronous, CPU-intensive ML inference (embeddings, Ollama HTTP calls, translation) into worker threads using `asyncio.to_thread` to prevent blocking FastAPI's async event loop.
 
-## Data And RAG Code
+### 3. Protocol-Driven Dependency Injection
+To keep unit tests fast (< 1 second) and independent of heavyweight models (Torch, SentenceTransformers, Ollama):
+- Define standard `typing.Protocol` interfaces in [`pipeline.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/pipeline.py#L20-L36) (`RetrieverProtocol`, `GeneratorProtocol`, `FallbackRouterProtocol`, `TranslationProtocol`).
+- The `RAGPipeline.__init__` must accept optional protocol instances. When provided, concrete heavy classes are never imported or instantiated.
+- Support `translator=False` in unit tests to completely bypass translation model initialization.
 
-- Treat source documents as untrusted input.
-- Keep active retrieval corpus separate from reference/translation/audit material.
-- Store enough metadata to reproduce retrieval and citations.
-- Keep chunking and indexing configuration versioned.
-- Do not call initial settings optimal without evaluation.
-- Ensure citation identifiers can be traced to source documents and chunks.
+### 4. Type Hints & Code Style
+- Use comprehensive type annotations on all function signatures (`str | None`, `list[dict[str, Any]]`, etc.).
+- Follow PEP 8 formatting with line length 88 (enforced via Ruff and Black).
+- Catch specific exceptions (`httpx.ConnectError`, `FileNotFoundError`) and avoid bare `except:` statements.
 
-## Language Processing
+---
 
-- Do not assume fixed language support beyond finalized project scope.
-- Konkani is the primary case study.
-- Fallback-language mapping must be configured from research decisions, not inferred ad hoc.
-- Preserve citation markers during translation or rewriting.
-- Flag uncertainty rather than silently changing meaning.
+## Data & RAG Engineering Standards
 
-## Frontend
+### 1. Ingestion Provenance
+- Ingestion scripts ([`ingestion.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/services/ingestion.py) and [`pdf_loader.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/ingestion/pdf_loader.py)) must record:
+  - Stable `doc_id` or slug.
+  - Official canonical source URL (`source_url`).
+  - Source family (`myScheme`, `SCERT_Goa`, `DOL_Goa`, `Goa_Gov`).
+  - Ingestion timestamp (`collected_at`).
+  - SHA-256 checksum or byte size where appropriate.
+- Chunk text deterministically using word boundaries (`CHUNK_SIZE_WORDS = 300`).
+- Ensure all vector store upserts are idempotent (`collection.upsert`).
 
-If the frontend is implemented:
+### 2. Grounding & Citation Discipline
+- Always extract provenance citations from the actual retrieved chunks that contributed to the context.
+- Never invent URLs or scheme titles not present in the retrieved chunk metadata.
+- When retrieval score is below `CONFIDENCE_THRESHOLD` (0.6), explicitly mark `route = "fallback"` and include the verification caveat instructing citizens to verify with official portals (`myscheme.gov.in`).
 
-- Keep UI copy aligned with the education-domain target.
-- Display no-supported-answer states clearly.
-- Make citations accessible and inspectable.
-- Do not imply that answers are guaranteed correct.
-- Avoid stale legacy UI-language assumptions from the previous prototype unless they are intentionally retained.
+---
 
-## Testing
+## Frontend Standards (`chat.html`)
 
-- Add unit tests for individual pipeline components.
-- Add integration tests for pipeline flow.
-- Add evaluation tests only after datasets are defined.
-- Record metric results only from actual runs.
-- Keep test fixtures small, auditable, and clearly marked synthetic or real.
+- Zero external framework dependencies: write clean, accessible, modern Vanilla HTML/CSS/JavaScript.
+- Maintain responsive layout with mobile and desktop support.
+- Provide real-time UI cues: active language toggle (English / Konkani), status indicators, clickable prompt suggestions, confidence tags, and source citation links.
+- Gracefully handle API errors and show clear error messages if backend services are offline.
 
-## Documentation Discipline
+---
 
-- Update `docs/` when implementation changes architecture or API behavior.
-- Mark unresolved decisions as To be determined.
-- Mark proposed research components as proposed until implemented and evaluated.
-- Do not invent results, datasets, thresholds, or model versions.
+## Testing Standards
+
+- **Unit tests:** Placed under [`backend/tests/`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/tests/). All unit tests must run in under 2 seconds without external network or GPU requirements.
+- **Mocking:** Use lightweight stub implementations adhering to protocols rather than mocking internal private methods.
+- **Verification scripts:** Store end-to-end integration and smoke scripts under `backend/scripts/` (e.g. `status.py`, `corpus_summary.py`, `smoke_retrieval.py`).

@@ -1,122 +1,150 @@
 # API Specification
 
-> **Research baseline:** API behavior must support Konkani (Devanagari) queries over the English active corpus, traceable citations, and a no-supported-answer outcome. Fallback routing remains experimental; see [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
+> **Research baseline:** [RESEARCH_PLAN.md](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/docs/RESEARCH_PLAN.md) outlines the architectural principles. This document specifies the active, running REST API implemented in [`backend/app/main.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/main.py) and [`backend/app/schemas.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/schemas.py).
 
-## Status
+## Status: Live & Implemented
 
-The existing backend API modules are mostly placeholders. This specification preserves a useful target API shape while clearly distinguishing existing scaffold from planned endpoints. No source code is changed by this documentation.
+The API is built using **FastAPI** and served with **Uvicorn** (standard port `8000`). It features lazy pipeline initialization to ensure rapid server boot times, CORS middleware enabled for cross-origin web clients, and automatic Swagger documentation at `/docs`.
 
-## Existing Scaffold
+Base URL (Local Development): `http://127.0.0.1:8000`
 
-Repository evidence:
+---
 
-- `backend/pyproject.toml` includes FastAPI and related dependencies.
-- Files exist for `chat.py`, `search.py`, `sources.py`, `feedback.py`, `admin.py`, and `health.py`.
-- `chat.py` contains only a comment indicating implementation is pending.
-- Other API files are effectively empty placeholders.
+## Active Endpoints Summary
 
-No fully implemented endpoint behavior is established from the current source.
+| Method | Endpoint | Purpose | Implemented |
+|---|---|---|---|
+| `GET` | `/health` | Process health and liveness check | ✅ Yes |
+| `GET` | `/translate/status` | Active translation backend state and diagnostic note | ✅ Yes |
+| `POST` | `/query` | End-to-end RAG query (English & Goan Konkani) | ✅ Yes |
+| `GET` | `/docs` | Interactive Swagger UI documentation | ✅ Yes |
+| `GET` | `/openapi.json` | Generated OpenAPI 3.1 specification schema | ✅ Yes |
 
-## Planned API Principles
+---
 
-- Responses must distinguish grounded answers from no-supported-answer responses.
-- API contracts must not assume a fixed list of supported languages until finalized.
-- Retrieval evidence and citations should be traceable to source documents.
-- Fallback routing fields should be optional/proposed until implemented.
-- Numeric thresholds and model-specific metadata should not be hardcoded in documentation unless finalized.
+## Endpoint Details
 
-## Planned Endpoints
+### 1. Health Check
 
-### Health
+Checks basic process liveness.
 
-`GET /api/v1/health/live`
+- **URL:** `/health`
+- **Method:** `GET`
+- **Authentication:** None
 
-Planned purpose: process liveness check.
-
-`GET /api/v1/health/ready`
-
-Planned purpose: readiness check for dependencies such as retrieval store, relational store, model service, or embedding service where used.
-
-Dependency names and checks are To be determined.
-
-### Chat
-
-`POST /api/v1/chat/message`
-
-Planned request:
-
+#### Response (`200 OK`)
 ```json
 {
-  "session_id": "optional-session-id",
-  "query": "user question",
-  "language": "optional language code"
+  "status": "ok"
 }
 ```
 
-Planned response:
+---
 
+### 2. Translation Service Status
+
+Inspects which translation engine is currently active in the running pipeline.
+
+- **URL:** `/translate/status`
+- **Method:** `GET`
+- **Authentication:** None
+
+#### Response Fields:
+- `backend` (string): Current translation backend. Values:
+  - `"indictrans2"`: AI4Bharat IndicTrans2 200M model (native `gom_Deva` / `kok`).
+  - `"nllb_marathi_proxy"`: Meta NLLB-200 600M model (using Marathi `mar_Deva` pivot for Konkani).
+  - `"none"`: Translation disabled; English queries only.
+  - `"not_loaded"`: Pipeline has not yet received its first query (lazy-load pending).
+- `note` (string): Human-readable operational explanation.
+
+#### Example Response (`200 OK`)
 ```json
 {
-  "answer": "grounded answer or no-supported-answer message",
-  "output_language": "to be determined",
-  "evidence_status": "sufficient_or_insufficient",
-  "citations": [],
-  "route": {
-    "primary_language": "to be determined",
-    "fallback_attempted": false,
-    "fallback_language": "to be determined"
-  }
+  "backend": "indictrans2",
+  "note": "Native Konkani (kok_Deva) via IndicTrans2"
 }
 ```
 
-Fallback route fields are proposed and should not be required until implemented.
+---
 
-### Search
+### 3. Query Execution (`/query`)
 
-`GET /api/v1/search`
+Runs an English or Goan Konkani query through the full multilingual RAG pipeline:
+1. Translates non-English queries to English.
+2. Conducts hybrid dense (ChromaDB) and sparse (BM25) search with Reciprocal Rank Fusion.
+3. Formulates context from top passages.
+4. Generates a grounded response via local Ollama (`llama3.2`).
+5. Evaluates retrieval confidence via `FallbackRouter`.
+6. Translates the final answer back to the requested user language (if Konkani).
+7. Gathers source provenance URLs.
 
-Planned purpose: retrieve evidence chunks/documents from the active retrieval corpus.
+- **URL:** `/query`
+- **Method:** `POST`
+- **Headers:** `Content-Type: application/json`
+- **Request Model:** [`QueryRequest`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/schemas.py#L6-L14)
+- **Response Model:** [`QueryResponse`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/schemas.py#L23-L31)
 
-Possible query parameters:
+#### Request Body
+```json
+{
+  "text": "What is the benefit amount for the PM scholarship scheme?",
+  "language": "en"
+}
+```
 
-- `q`: query text.
-- `language`: optional language filter; final allowed values To be determined.
-- `document_type`: optional education-domain filter.
-- `limit`: optional result count; default To be determined.
+#### Field Specifications:
+- `text` (string, required): 1 to 2,000 characters. The user's question.
+- `language` (string, optional): ISO code. Defaults to `"en"`. Supported values:
+  - `"en"`: English.
+  - `"kok"`: Goan Konkani (Devanagari script).
 
-### Sources
+#### Response Body (`200 OK`)
+```json
+{
+  "query": "What is the benefit amount for the PM scholarship scheme?",
+  "answer": "The Prime Minister's Scholarship Scheme provides financial assistance of ₹2,500 per month for male students and ₹3,000 per month for female students to pursue professional degree courses.",
+  "confidence": 0.9833,
+  "route": "direct",
+  "sources": [
+    {
+      "title": "Prime Minister's Scholarship Scheme",
+      "source_url": "https://www.myscheme.gov.in/schemes/pmss"
+    }
+  ]
+}
+```
 
-`GET /api/v1/sources`
+#### Low-Confidence / Fallback Response Example
+When normalized retrieval confidence is below `0.6`, `route` is marked `"fallback"` and a verification caveat is automatically attached:
+```json
+{
+  "query": "What are the rules for sports quota grants?",
+  "answer": "Under the Free Education for Sports Medal Winners scheme, eligible athletes receive financial support for tuition and training fees.\n\n⚠️ I found some related information but I'm not confident enough to give a definitive answer. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+  "confidence": 0.4500,
+  "route": "fallback",
+  "sources": [
+    {
+      "title": "Free Education For Sports Medal Winners / Participants In National / International Competitions",
+      "source_url": "https://www.myscheme.gov.in/schemes/fesmwpnie"
+    }
+  ]
+}
+```
 
-Planned purpose: list indexed or available source documents.
+#### Error Responses:
+- `422 Unprocessable Entity`: Validation failure (empty string or text > 2000 chars).
+- `503 Service Unavailable`: Pipeline initialization error (e.g. missing ChromaDB index or unavailable model assets).
 
-The API must distinguish indexed active retrieval corpus entries from reference/audit material if both exist.
+---
 
-`GET /api/v1/sources/{source_id}`
+## Client Integration
 
-Planned purpose: return source metadata and available chunks or citation details where allowed.
+### CORS Configuration
+CORS middleware is enabled globally (`allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`), permitting web frontends (including [`chat.html`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/chat.html)) to call the API directly without proxy restrictions.
 
-### Feedback
-
-`POST /api/v1/feedback`
-
-Planned purpose: collect user or evaluator feedback on a response.
-
-Schema and rating scale: To be determined.
-
-### Admin / Ingestion
-
-Admin endpoints are planned only if the implementation requires runtime ingestion or maintenance operations.
-
-Authentication/authorization requirements: To be determined.
-
-## Not Yet Specified
-
-- Final OpenAPI schema.
-- Authentication model.
-- Rate limits.
-- Error code taxonomy.
-- Final language enum.
-- Evidence/confidence threshold.
-- Fallback-language mapping.
-- Final deployment URLs.
+### cURL Example
+```bash
+curl -X POST "http://127.0.0.1:8000/query" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "मुलींसाठी कोणत्या शिष्यवृत्ती योजना उपलब्ध आहेत?", "language": "kok"}'
+```

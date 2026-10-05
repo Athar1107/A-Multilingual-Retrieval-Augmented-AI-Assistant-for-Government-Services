@@ -1,141 +1,84 @@
-# RAG Pipeline
+# RAG Pipeline Specification
 
-> **Research baseline:** The active corpus is English. Konkani (Devanagari) is the primary user language; native Konkani/Marathi documents are offline translation-audit references. See [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
+> **Research baseline:** [RESEARCH_PLAN.md](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/docs/RESEARCH_PLAN.md) establishes the research baseline. This document details the step-by-step pipeline as implemented in [`backend/app/rag/pipeline.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/pipeline.py) and supporting modules.
 
-## Status
+---
 
-This is the target pipeline specification for the Multilingual RAG research prototype. It is documentation for planned implementation, not proof that the pipeline is already implemented.
+## Pipeline Overview
 
-## 1. Knowledge Acquisition
+The pipeline executes a synchronous 8-step workflow on a background worker thread (`asyncio.to_thread`):
+```
+User Query ──> [1. Translate Query] ──> [2. Hybrid Retrieve] ──> [3. Assemble Context] ──>
+              ──> [4. Generate Answer] ──> [5. Fallback Route] ──> [6. Translate Answer] ──>
+              ──> [7. Extract Citations] ──> QueryResponse
+```
 
-Collect official or authoritative education-related government sources such as schemes, scholarships, financial assistance notices, eligibility documents, application guidelines, benefits, and notifications.
+---
 
-Current status:
+## Detailed Pipeline Stages
 
-- Target corpus: To be determined.
-- Source-selection criteria: To be determined.
-- Corpus size: To be determined.
+### Stage 1: Query Ingestion & Translation
+- Input: User query string and language code (`"en"` or `"kok"`).
+- Implementation: [`app/rag/translation.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/translation.py)
+- Logic:
+  - If language is `"en"`, query is passed through unmodified.
+  - If language is `"kok"`, it is translated to English via **IndicTrans2** (`gom_Deva` → `eng_Latn`) or **NLLB-200** (`mar_Deva` → `eng_Latn`).
+  - If translation models are not loaded, the raw text is passed through.
 
-## 2. Document Processing
+### Stage 2: Hybrid Dense & Lexical Retrieval
+- Implementation: [`app/rag/retriever.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/retriever.py)
+- Sub-steps:
+  1. **Dense Search:** Query embedded via `SentenceTransformer("all-MiniLM-L6-v2")` and matched against ChromaDB `education_schemes` collection using cosine similarity ($top\_k$).
+  2. **Sparse Search:** Tokenized query matched using `BM25Okapi` over all 318 indexed chunks in ChromaDB.
+  3. **Reciprocal Rank Fusion (RRF):** Both ranked lists are combined using constant $k=60$:
+     $$RRF(d) = \sum_{m \in \{\text{dense}, \text{bm25}\}} \frac{1}{60 + \text{rank}_m(d)}$$
+  4. **Deduplication:** Deduped using the first 300 characters of each passage. Returns the top 5 fused passages.
 
-Planned processing:
+### Stage 3: Context Assembly
+- Retrieved passages are combined into a clean text block separated by newlines (`\n\n`).
+- If no passages are retrieved, the pipeline returns immediately with `route = "no_results"` and confidence `0.0`.
 
-- Parse PDFs, HTML, text, or other selected source formats.
-- Preserve source identity, URL or origin, issuing body, date information where available, and language metadata where known.
-- Separate active retrieval documents from translation, reference, or audit material.
+### Stage 4: Grounded Answer Generation
+- Implementation: [`app/rag/generator.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/generator.py)
+- Context length is capped at `MAX_CONTEXT_CHARS = 2000` to prevent token bloat.
+- Formatted prompt sent via HTTP POST to Ollama (`/api/generate`):
+  - Model: `llama3.2`
+  - Temperature: `0.1` (strict factual grounding)
+  - `num_predict`: `200` output tokens
+  - Timeout: 180s
 
-Repository evidence: dependencies include PyMuPDF, BeautifulSoup, Unstructured, and lxml, but processing modules are placeholders.
+### Stage 5: Confidence Calculation & Fallback Routing
+- Implementation: [`app/rag/fallback_routing.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/fallback_routing.py)
+- **Score Normalization:** RRF scores are small ($\approx 0.01 - 0.03$). Average RRF score is normalized:
+  $$\text{normalised\_score} = \min(\text{raw\_avg} \times 60, 1.0)$$
+- **Routing Decision:**
+  - If $\text{confidence} \ge 0.6$: `route = "direct"`, raw generated answer preserved.
+  - If $\text{confidence} < 0.6$: `route = "fallback"`, appends official verification caveat directing user to `myscheme.gov.in`.
 
-## 3. Cleaning
+### Stage 6: Output Language Translation
+- If original query was in Konkani and the route is `"direct"`, the English answer is translated back to Konkani Devanagari (`eng_Latn` → `gom_Deva` or `mar_Deva` proxy).
 
-Planned cleaning should remove or normalize boilerplate, repeated headers/footers, broken whitespace, encoding artifacts, and layout noise without deleting legally or administratively meaningful text.
+### Stage 7: Source Citation & Provenance Extraction
+- Unique source URLs and titles are deduplicated across retrieved chunks:
+  ```python
+  sources = [
+      SourceCitation(title=r["title"], source_url=r["source_url"])
+      for r in results if r["source_url"]
+  ]
+  ```
 
-Konkani-specific and script-specific cleaning rules are To be determined.
+---
 
-## 4. Chunking
+## Knowledge Base Construction (Offline)
 
-Chunking should create retrieval-sized units that preserve enough context for education-scheme questions. Chunk size, overlap, and boundary rules are not experimentally finalized.
-
-Initial prototype configuration values from old documentation must be treated only as defaults if reused, not optimal settings.
-
-## 5. Metadata
-
-Planned metadata may include:
-
-- Source document identifier.
-- Title.
-- Source URL or file path.
-- Issuing body or department where known.
-- Document date where known.
-- Domain/category such as scholarship, eligibility, benefit, or application process.
-- Language code where known.
-- Chunk position and page/section reference where available.
-- Active corpus versus reference/audit classification.
-
-Exact required fields are To be determined during implementation.
-
-## 6. Indexing
-
-Planned indexing:
-
-- Dense vector indexing where applicable.
-- Lexical indexing where applicable.
-- Metadata filters for domain, source, language, and date where implemented.
-
-Repository evidence: ChromaDB and rank-bm25 are present in dependency/config files. Final embedding model and retrieval store configuration are To be determined.
-
-## 7. Query Processing
-
-The target system should:
-
-- Receive the user query.
-- Identify language or route language handling where required.
-- Normalize the query without changing meaning.
-- Apply language processing / translation where required by the selected route.
-
-No final list of supported languages is established. Konkani is the primary case study.
-
-## 8. Retrieval
-
-Retrieval should search the active retrieval corpus and return candidate evidence chunks.
-
-Planned retrieval modes:
-
-- Dense retrieval.
-- Lexical retrieval.
-- Hybrid retrieval / result combination where applicable.
-
-Specific top-k values, weights, retrieval thresholds, and reranking choices are To be determined experimentally.
-
-## 9. Evidence Assessment
-
-Evidence assessment decides whether retrieved material is sufficient to answer the query.
-
-Required caution:
-
-- Retrieval scores do not guarantee correctness.
-- Retrieved evidence does not automatically guarantee factual correctness.
-- Citations do not guarantee that every generated claim is supported.
-- Evidence/confidence threshold: To be determined experimentally.
-
-## 10. Adaptive Fallback Routing
-
-Adaptive Fallback Language Routing is a **proposed research component**, not an implemented feature in the current scaffold.
-
-Conceptual behavior:
-
-1. Try the primary language route.
-2. Retrieve and assess evidence.
-3. If evidence is insufficient, use a fallback language route if the finalized research design defines one.
-4. Retrieve and assess fallback evidence.
-5. If evidence is still insufficient, return a no-supported-answer response.
-
-Fallback-language mapping: To be determined based on linguistic/resource criteria and experimental evaluation.
-
-Possible trade-offs:
-
-- Additional latency.
-- Additional processing.
-- Cascading translation errors.
-- Semantic drift.
-- Uncertain performance improvement.
-
-## 11. Grounded Generation
-
-When evidence is sufficient, the generation model should answer only from retrieved evidence and explicitly avoid unsupported claims.
-
-Generation model: To be determined. Repository configuration mentions Ollama/Llama 3.1 from the previous prototype, but this is not a finalized target model.
-
-## 12. Output-Language Handling
-
-The response should be delivered in the appropriate output language where supported by the target design. Output translation must preserve citation markers and should not introduce new claims.
-
-Language-processing technology and quality criteria are To be determined.
-
-## 13. Evidence And Citations
-
-Answers should include citations or evidence references sufficient for user review. Citation format is To be determined, but each cited claim should be traceable to retrieved source material.
-
-## 14. No-Supported-Answer Behavior
-
-If evidence is insufficient after the allowed route(s), the system should say that it cannot provide a supported answer from the available sources and should avoid fabricating eligibility, deadlines, benefits, or application instructions.
+1. **myScheme Ingestion ([`ingestion.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/services/ingestion.py)):**
+   - Parses URLs in `schemes_list.txt`.
+   - Fetches scheme records via public v6 REST API (`https://api.myscheme.gov.in/schemes/v6/public/schemes/{slug}`).
+   - Cleans HTML and markdown formatting; saves structured JSON to `data/processed/active_english.json` (58 schemes).
+2. **Goa PDF Ingestion ([`pdf_loader.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/ingestion/pdf_loader.py)):**
+   - Downloads 10 official PDF circulars and charters.
+   - Extracts and cleans text using PyMuPDF (`fitz`), stripping page headers, footers, and line noise.
+3. **Chunking & Embedding ([`indexing.py`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/backend/app/rag/indexing.py)):**
+   - Chunks text at 300 words with title prepended.
+   - Encodes chunks into 384-dimensional dense vectors with `all-MiniLM-L6-v2`.
+   - Batch upserts into ChromaDB `education_schemes` collection (Total: **318 chunks** across 68 documents).

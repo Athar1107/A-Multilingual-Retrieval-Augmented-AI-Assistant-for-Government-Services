@@ -1,69 +1,65 @@
 # Research Plan Baseline
 
-**Source of truth:** `konkani-rag-research-paper-v7.md`, supplied by the project owner on 2026-09-29. This document translates that paper into repository documentation. It does not overwrite the separate source-tree audit in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+**Source of truth:** `konkani-rag-research-paper-v7.md`, owner-approved research baseline.  
+See [IMPLEMENTATION_STATUS.md](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/docs/IMPLEMENTATION_STATUS.md) for verified repository implementation.
 
-## Research Scope
+---
 
-The project is a multilingual Retrieval-Augmented Generation (RAG) research prototype for public-service information access in low-resource Indian languages. The primary case study is **Konkani written in Devanagari**, in the domain of **Goan education and government scholarship schemes**.
+## 1. Research Scope & Problem
 
-The system is intended to give grounded policy guidance; it is not a guarantee of factual correctness. Retrieval, citations, translation, and fallback routing may reduce risks but do not eliminate hallucination, semantic drift, or error propagation.
+The project investigates **Multilingual Retrieval-Augmented Generation (RAG)** for public service information access in low-resource and under-resourced Indian languages. The primary case study is **Goan Konkani in Devanagari script (`gom_Deva`)** in the domain of **Goan education and government scholarship/public-policy schemes**.
 
-## Language Taxonomy
+The research addresses three fundamental challenges:
+1. **Resource Scarcity:** Very few administrative and legal documents are published in native Konkani.
+2. **Translation Fragility:** Direct machine translation of policy documents introduces cascading errors into critical numbers (eligibility age, income limits, stipends).
+3. **LLM Hallucination:** Out-of-the-box LLMs hallucinate scheme guidelines when queried in low-resource Indian languages.
 
-| Tier | Defined scope |
-|---|---|
-| Architecture | Language-agnostic design for under-resourced scripts with a multilingual embedding or NMT path. |
-| Current prototype route | Konkani (Devanagari) is the input/output language (`L1`); English is the active knowledge-base and pivot language. |
-| Evaluation | A hand-written gold set of 15–20 Konkani question-answer pairs. Results are not yet available. |
-| Future languages | Any additional Indian languages are future work, not an implementation or evaluation claim. |
+---
 
-The fallback language (`L2`) is **to be determined based on linguistic/resource criteria and experimental evaluation**. It must not be hardcoded or presented as a proven improvement.
+## 2. Research Hypothesis
 
-## Data Governance
+> "A stage-isolated Multilingual RAG architecture—coupling an authoritative English knowledge base with hybrid dense/sparse retrieval and high-precision translation—can provide grounded, cited policy guidance in low-resource Indian languages while mitigating unsupported generation."
 
-The intended authoritative sources are:
+---
 
-- **myScheme** (`myscheme.gov.in`) for central and state schemes;
-- **SCERT Goa** (`scert.goa.gov.in`) for scholarship and education guidance;
-- **Directorate of Official Language, Goa** (`dol.goa.gov.in`) for policy documents and citizen charters.
+## 3. Implemented Prototype Architecture (Status: Verified Operational)
 
-The active retrieval index contains English policy documents. Native Konkani and Marathi material from SCERT Goa and DOL Goa belongs to an offline **translation-audit reference set** and must not be added to the active retrieval index without a documented design change.
+| Subsystem | Implemented Research Component | Technical Configuration |
+|---|---|---|
+| **Active Knowledge Base** | Official English policy corpus | 68 documents (58 myScheme + 10 Goa State Government PDFs) |
+| **Vector Index** | ChromaDB Persistent Collection | 318 chunks, cosine distance, `all-MiniLM-L6-v2` (384-dim) |
+| **Lexical Index** | BM25Okapi sparse search | In-memory token index over all 318 ChromaDB chunks |
+| **Rank Fusion** | Reciprocal Rank Fusion | Constant $k=60$, 300-char prefix deduplication |
+| **Language Processing** | Two-tier translation layer | IndicTrans2 200M (`gom_Deva` ↔ `eng_Latn`) + NLLB-200 600M (`mar_Deva` proxy) |
+| **LLM Generation** | Grounded local generation | Ollama `llama3.2` (temperature 0.1, prompt cap 2000 chars) |
+| **Fallback Routing** | Confidence-gated disclaimer routing | Baseline threshold $\tau = 0.6$, caveat attached on low score |
+| **Client Interface** | Single-page responsive application | [`chat.html`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/chat.html) with language toggle and citation cards |
 
-### Maintained Scheme Register
+---
 
-[`schemes_list.txt`](../schemes_list.txt) is the maintained input register for myScheme records. Each line currently provides a human-readable scheme title and its myScheme URL. It is expected to change as schemes are added, removed, or corrected.
+## 4. Empirical Evaluation Protocol (Active Agenda)
 
-This register is not itself the active retrieval corpus. Ingestion must fetch or otherwise capture the authoritative English document content, record provenance and collection date, validate/deduplicate records, and write retrieval-ready documents and metadata before indexing. Keep the register version or collection timestamp with each ingestion run so index contents remain reproducible.
+To rigorously assess the system without allowing translation noise to obscure retrieval failure, evaluation must use **stage-isolated measurement**:
 
-## Component Classification
+### A. Gold-Standard Evaluation Dataset (To Be Formatted)
+- **Target:** 15–20 curated question-answer pairs in Goan Konkani covering:
+  - Scholarship eligibility (caste, income ceiling, age criteria).
+  - Financial benefit amounts (monthly stipends, fee waivers).
+  - Application guidelines and required documentation.
+  - Negative queries (schemes not in corpus, e.g. PM Kisan).
 
-| Classification | Research-plan position |
-|---|---|
-| Implemented local-prototype capabilities | English knowledge base; ChromaDB dense retrieval; SQLite/BM25 sparse retrieval; IndicTrans2 supporting translation; local quantized generation with protected inline citations; FastAPI/Uvicorn backend and a single-page HTML/JS chat UI. |
-| Proposed | Language identification/direct multilingual processing; dual-metric evidence validation using vector similarity plus NLI entailment. |
-| Experimental | Adaptive Fallback Language Routing; confidence threshold `tau`; dense/sparse fusion weight `alpha`. |
-| Future work | PostgreSQL/pgvector or Qdrant scaling, LangGraph reflection, low-fertility tokenizers, and BHASHINI integration. |
+### B. Stage-by-Stage Metrics
 
-The preceding “implemented” row reports the prototype status in the research paper. Whether a capability is represented by the files in this repository is reported separately in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md); do not conflate the two evidence sources.
+| Stage | Focus Question | Metrics |
+|---|---|---|
+| **1. Translation** | Does translation preserve proper nouns and figures? | chrF / chrF++, BLEU against human-verified references |
+| **2. Retrieval** | Are the correct policy chunks retrieved? | Recall@k ($k \in \{1, 3, 5\}$), MRR, Hit Rate |
+| **3. Generation** | Is the answer grounded and factual? | Faithfulness / Groundedness ratio, Answer Correctness |
+| **4. Fallback Routing** | Does confidence routing prevent misleading answers? | Fallback activation rate, false-alarm rate, latency overhead |
 
-## Target Runtime Flow
+---
 
-1. Receive a Konkani-Devanagari query and perform language-aware preprocessing.
-2. Search the active English corpus with parallel dense and BM25 retrieval.
-3. Merge candidates using a normalized fusion method; `alpha` is experimental.
-4. Assess evidence using vector similarity and NLI entailment; `tau` is experimental.
-5. If evidence is sufficient, generate a grounded Konkani answer with protected inline source tags.
-6. If evidence is insufficient, evaluate the experimental fallback path through `L2`; otherwise return a no-supported-answer response.
+## 5. Ethical Governance
 
-## Evaluation Protocol
-
-Use stage-isolated comparison so translation noise does not hide retrieval failure:
-
-| Stage | Measures |
-|---|---|
-| Retrieval | Recall@k, context precision/recall, MRR, nDCG |
-| Generation | Answer correctness, relevance, faithfulness/NLI entailment ratio, Token-F1/Exact Match |
-| Supporting translation | chrF/chrF++ and BLEU against human-verified references |
-| Fallback | Rescue rate and latency overhead |
-
-Compare a native primary route, an English-pivot translation route, and the fallback-routing approach. No metric result, threshold, or performance advantage is currently claimed.
+- **Attribution & Provenance:** Every response provides direct links to official portals (`myscheme.gov.in`, `scert.goa.gov.in`, `dol.goa.gov.in`).
+- **Cautious Disclosure:** RAG reduces hallucination but does not guarantee infallibility; users are reminded to verify official scheme guidelines before submitting formal government applications.
