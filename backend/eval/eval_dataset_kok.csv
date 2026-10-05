@@ -1,0 +1,11 @@
+id,question_konkani,question_english_ref,ground_truth_english,source_doc_id,category
+KOK-01,पीएम शिष्यवृत्ती योजनेंत मुलांक दरमहिन्याला किती रुपये मेळतात?,What is the monthly scholarship for boys under PM Scholarship?,Rs. 2500 per month for boys,pmss,scholarship
+KOK-02,पीएम शिष्यवृत्ती योजनेंत मुलींक दरमहिन्याला किती रुपये मेळतात?,What is the monthly scholarship for girls under PM Scholarship?,Rs. 3000 per month for girls,pmss,scholarship
+KOK-03,STSE गोवा शिष्यवृत्ती रक्कम किती आसा?,What is the STSE Goa scholarship amount?,Rs. 2500 per student,scert-goa-science-talent-search-2026,scholarship_goa
+KOK-04,गोव्यांत STSE खाला दर वर्षा किती शिष्यवृत्त्यो दितात?,How many STSE scholarships are awarded in Goa per year?,200 scholarships,scert-goa-science-talent-search-2026,scholarship_goa
+KOK-05,भाषा पुरस्कार योजना म्हळ्यार काय?,What is the Bhasha Puraskar Yojana?,A scheme to award scholars writers dedicated to Konkani Marathi and Sanskrit languages,dol-goa-bhasha-puraskar-yojana,language_scheme
+KOK-06,भाषा पुरस्कार योजना कोणत्या वर्षा सुरू जाली?,In which year was the Bhasha Puraskar Yojana started?,2013,dol-goa-bhasha-puraskar-yojana,language_scheme
+KOK-07,DPIIT इंटर्नशीप मधें दरमहिन्याला किती वेतन मेळता?,What is the DPIIT internship monthly stipend?,Rs. 10000 per month,dpiit-is,internship
+KOK-08,राष्ट्रीय साधन-सह-गुण शिष्यवृत्ती योजना म्हळ्यार काय?,What is the National Means-cum-Merit Scholarship Scheme?,Centrally sponsored scheme to award scholarships to meritorious students from economically weaker sections,nmmss,scholarship
+KOK-09,अनुसूचित जाती विद्यार्थ्यांसाठी राष्ट्रीय परदेश शिष्यवृत्ती काय आसा?,What is the National Overseas Scholarship for SC students?,Scholarship for SC students to pursue higher education abroad,nos-sc,scholarship
+KOK-10,भाषा संचालनालय गोवा कोणत्यो सेवा दिता?,What services does the Directorate of Official Language Goa provide?,Training workshops seminars and Devnagari Computer Typing for government employees,dol-goa-citizen-charter-2025,citizen_service

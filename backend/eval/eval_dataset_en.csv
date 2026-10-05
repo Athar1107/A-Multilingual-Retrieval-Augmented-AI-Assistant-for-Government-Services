@@ -1,0 +1,21 @@
+id,question,ground_truth,source_doc_id,category
+EN-01,What is the monthly scholarship amount for boys under the Prime Minister Scholarship Scheme?,Rs. 2500 per month for boys,pmss,scholarship
+EN-02,What is the monthly scholarship amount for girls under the Prime Minister Scholarship Scheme?,Rs. 3000 per month for girls,pmss,scholarship
+EN-03,Who is eligible for the Post Graduate Indira Gandhi Scholarship for Single Girl Child?,Girl students who are the only girl child in the family and admitted to first year of PG courses,pg-igssgc,scholarship
+EN-04,What is the annual fellowship amount under the Post Graduate Indira Gandhi Scholarship?,Rs. 36200 per annum,pg-igssgc,scholarship
+EN-05,What is the STSE scholarship amount per student in Goa?,Rs. 2500 per student,scert-goa-science-talent-search-2026,scholarship_goa
+EN-06,How many scholarships are awarded under STSE in Goa each year?,200 scholarships,scert-goa-science-talent-search-2026,scholarship_goa
+EN-07,What is the Bhasha Puraskar Yojana?,A scheme by the Government of Goa to award scholars and writers who have dedicated work in Konkani Marathi and Sanskrit languages,dol-goa-bhasha-puraskar-yojana,language_scheme
+EN-08,In which year was the Bhasha Puraskar Yojana constituted?,2013,dol-goa-bhasha-puraskar-yojana,language_scheme
+EN-09,What is the DPIIT internship stipend per month?,Rs. 10000 per month,dpiit-is,internship
+EN-10,What is the minimum and maximum duration of DPIIT internship?,Minimum one month and maximum three months,dpiit-is,internship
+EN-11,Who can apply for the AICTE Mitacs Globalink Research Internship?,Eligible Indian undergraduate students in Science Technology Engineering and Mathematics disciplines,am-gris,internship
+EN-12,What is the National Means-cum-Merit Scholarship Scheme?,A centrally sponsored scheme to award scholarships to meritorious students from economically weaker sections to prevent dropout at class VIII,nmmss,scholarship
+EN-13,What is the National Overseas Scholarship for Scheduled Caste candidates?,A scholarship scheme by Ministry of Social Justice and Empowerment for SC students to pursue higher education abroad,nos-sc,scholarship
+EN-14,What is the Laptop-e Scheme in Goa?,A scheme providing laptops to students in Goa,les-goa,scholarship_goa
+EN-15,What services does the Directorate of Official Language Goa provide?,Imparting training through workshops seminars and Devnagari Computer Typing training to Government and Semi Government employees,dol-goa-citizen-charter-2025,citizen_service
+EN-16,What is the Lokbhasha Sangrah Yojana?,A scheme for collection and preservation of folk language materials in Goa,dol-goa-lokbhasha-sangrah-yojana,language_scheme
+EN-17,What is the PM-YASASVI scheme?,Top Class College Education scheme for OBC EBC and DNT students,pm-yasasvitcceobcebcdnts,scholarship
+EN-18,What is the Savitribai Jyotirao Phule Fellowship for Single Girl Child?,A fellowship for single girl child pursuing research or PhD,sjpfsgc,scholarship
+EN-19,Who is eligible for the SMILE scholarship for transgender persons?,Transgender students studying in Secondary school class IX X and Senior Secondary class XI XII,smile-scholarship,welfare
+EN-20,What documents are needed to apply at the South Goa Collectorate for a residence certificate?,Application form submitted to the Collectorate South Goa,goa-south-collectorate-charter-2026,citizen_service

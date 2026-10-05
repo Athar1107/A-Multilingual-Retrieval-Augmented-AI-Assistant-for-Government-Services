@@ -1,0 +1,204 @@
+{
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "errors": 0,
+    "pass_rate": 1.0,
+    "avg_answer_relevance": 0.72,
+    "source_accuracy": 0.5,
+    "avg_confidence": 0.997,
+    "language_accuracy": 1.0,
+    "avg_latency_s": 30.7
+  },
+  "results": [
+    {
+      "id": "KOK-01",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "पीएम शिष्यवृत्ती योजनेंत मुलांक दरमहिन्याला किती रुपये मेळतात?",
+      "ground_truth": "Rs. 2500 per month for boys",
+      "answer": "संदर्भा प्रमाण प्रधानमंत्री शिश्यवृत्ती येवजण ( पी. एम. एस. एस. ) चल्यांक म्हयन्याक ₹2,500/ - आनी चल्यांक म्हयन्याक ₹3,000/ - शिश्यवृत्ती दिता.",
+      "answer_relevance": 0.3,
+      "source_accuracy": true,
+      "confidence": 0.971,
+      "language_ok": true,
+      "latency_s": 15.33,
+      "status": "PASS",
+      "sources_returned": [
+        "Prime Minister's Scholarship Scheme",
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Tribal Welfare Department Goa — Citizen Charter (S"
+      ]
+    },
+    {
+      "id": "KOK-02",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "पीएम शिष्यवृत्ती योजनेंत मुलींक दरमहिन्याला किती रुपये मेळतात?",
+      "ground_truth": "Rs. 3000 per month for girls",
+      "answer": "प्रधानमंत्री शिश्यवृत्ती येवजणे खाला दर म्हयन्याक चल्यांक कितले पयशे मेळटात हाची म्हायती संदर्भांत दिना. शिश्यवृत्ती स्लॉटांतले 30% पात्र अनुसुचीत जातीच्या चलयां खातीर राखीव आसात असो फकत उल्लेख आसा पूण तातूंत शिश्यवृत्तीची रक्कम स्पश्ट करिना.",
+      "answer_relevance": 0.3,
+      "source_accuracy": true,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 20.15,
+      "status": "PASS",
+      "sources_returned": [
+        "Top Class Education For Scheduled Caste Students",
+        "Prime Minister's Scholarship Scheme",
+        "Post Graduate Indira Gandhi Scholarship For Single"
+      ]
+    },
+    {
+      "id": "KOK-03",
+      "language": "kok",
+      "category": "scholarship_goa",
+      "question": "STSE गोवा शिष्यवृत्ती रक्कम किती आसा?",
+      "ground_truth": "Rs. 2500 per student",
+      "answer": "एस. टी. एस. ई. गोंय शिश्यवृत्तीची रक्कम विद्यार्थ्यान आपणायिल्ल्या अभ्यासक्रमाचेर निंबून वेगवेगळी आसता. शिश्यवृत्तीची रक्कम सकयल दिल्या प्रमाण पत्र अभ्यासक्रमः रु. 5,500 ( देखरेखी खातीर भत्ता + रु. 1,000 ( पुस्तकां खातीर अतिरिक्त रक्कम ) युनिफॉर्म स्टेशनरी बी. * डिप्लोमा अभ्यासक्रमः रु. 5,000 ( देखर",
+      "answer_relevance": 0.3,
+      "source_accuracy": false,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 55.25,
+      "status": "PASS",
+      "sources_returned": [
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "State Science Talent Search Examination (STSE) Goa",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-04",
+      "language": "kok",
+      "category": "scholarship_goa",
+      "question": "गोव्यांत STSE खाला दर वर्षा किती शिष्यवृत्त्यो दितात?",
+      "ground_truth": "200 scholarships",
+      "answer": "संदर्भा प्रमाण विज्ञान प्रतिभा सोद परिक्षा ( एस. टी. एस. ई. ) येवजणे खाला गोंय राज्यांतल्यान दर वर्सा आठवी इयत्तेच्या नववी इयत्तेच्या आनी बाराव्या इयत्तेच्या गुणवंत विद्यार्थ्यांक वट्ट 200 शिश्यवृत्ती दितात. शिश्यवृत्तीची किंमत प्रत्येकी 2,500 रुपया आसा. गोंय राज्य शैक्षणिक संशोधन आनी प्रशिक्षण परिश",
+      "answer_relevance": 1.0,
+      "source_accuracy": false,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 37.32,
+      "status": "PASS",
+      "sources_returned": [
+        "State Science Talent Search Examination (STSE) Goa",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-05",
+      "language": "kok",
+      "category": "language_scheme",
+      "question": "भाषा पुरस्कार योजना म्हळ्यार काय?",
+      "ground_truth": "A scheme to award scholars writers dedicated to Konkani Marathi and Sanskrit languages",
+      "answer": "ही भास पुरस्कार येवजण म्हळ्यार भाषा पुरस्कार येवजण ( योजना. ह्या येवजणेचो हेतू खास करून कोंकणी मराठी आनी संस्कृत भाशां खातीर भाशेच्या हितांत आपली कारकीर्द समर्पीत केल्ल्या व्यक्तींक मानधन प्रमाणपत्र आनी स्मृतिचिन्ह दिवप हो आसा. ह्या येवजणेंत ज्ञानपीठ पुरस्कार मेळिल्ल्या रवींद्र केलेकर सयत पात्र व्यक",
+      "answer_relevance": 1.0,
+      "source_accuracy": false,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 37.9,
+      "status": "PASS",
+      "sources_returned": [
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-06",
+      "language": "kok",
+      "category": "language_scheme",
+      "question": "भाषा पुरस्कार योजना कोणत्या वर्षा सुरू जाली?",
+      "ground_truth": "2013",
+      "answer": "भाषा पुरस्कार येवजण 2013 वर्सा सुरू जाली. ह्या येवजणेचो मुखेल हेतू लिपिल्ले गूण मुखार हाडप आनी भाशेच्या विद्यार्थ्याच्या शिक्षणीक कार्याचो पर्दाफाश करप आनी भाशेच्या आवडी खातीर आपली कारकीर्द समर्पीत केल्ल्या मनशाक अर्थीक आदार दिवप हो आसा. हे पुरस्कार सकयल दिल्ल्या नांवांनी दितातः दुर्गाराम उपाधी संस्",
+      "answer_relevance": 1.0,
+      "source_accuracy": false,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 31.06,
+      "status": "PASS",
+      "sources_returned": [
+        "Bhasha Puraskar Yojana — Language Award Scheme (Ko",
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Centrally Sponsored Scheme of Upgradation of Merit"
+      ]
+    },
+    {
+      "id": "KOK-07",
+      "language": "kok",
+      "category": "internship",
+      "question": "DPIIT इंटर्नशीप मधें दरमहिन्याला किती वेतन मेळता?",
+      "ground_truth": "Rs. 10000 per month",
+      "answer": "डी. पी. आय. आय. टी. इंटर्नशिप येवजणे प्रमाण इन्टर्नांक म्हयन्याक ₹10,000/ - पगार दितले. ही स्टाइपेंड रक्कम इंटर्नशिप काळ पुराय जाले उपरांत दितली. स्टाइपेंड रक्कम हो डी. पी. आय. आय. टी. इंटर्नशिप येवजणेत वांटो घेवपाचो फायदो.",
+      "answer_relevance": 0.3,
+      "source_accuracy": true,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 22.24,
+      "status": "PASS",
+      "sources_returned": [
+        "DPIIT Internship Scheme",
+        "SMILE - Comprehensive Rehabilitation For Welfare O",
+        "Food Safety & Standards Authority Of India (FSSAI)"
+      ]
+    },
+    {
+      "id": "KOK-08",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "राष्ट्रीय साधन-सह-गुण शिष्यवृत्ती योजना म्हळ्यार काय?",
+      "ground_truth": "Centrally sponsored scheme to award scholarships to meritorious students from economically weaker sections",
+      "answer": "राष्ट्रीय संसाधन - सह - गन शिश्यवृत्ती येवजणेच्या संदर्भांत कसलीच म्हायती मेळना. ह्या संदर्भांत फकत राष्ट्रीय साधन - सह - मेरिट शिश्यवृत्ती येवजणेचेर चर्चा जाता आनी ह्या नांवान हेर खंयच्याच येवजणेचो उल्लेख करिना.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 21.13,
+      "status": "PASS",
+      "sources_returned": [
+        "National Means-cum-Merit Scholarship Scheme",
+        "National Talent Scholarship Postgraduate",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-09",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "अनुसूचित जाती विद्यार्थ्यांसाठी राष्ट्रीय परदेश शिष्यवृत्ती काय आसा?",
+      "ground_truth": "Scholarship for SC students to pursue higher education abroad",
+      "answer": "अनुसुचीत जाती आदी लोकां खातीर राष्ट्रीय विदेशी शिश्यवृत्ती ही समाजीक न्याय आनी सक्षमीकरण मंत्रालयाची शिश्यवृत्ती येवजण. अनुसुचीत जातीच्या, अधिसूचित भटक्या आनी अर्द भटक्या जमातींच्या, भूंय विरयत शेतकी मजूर आनी पारंपारीक कारागिरांक नेमान पुराय वेळ शिकपी विद्यार्थ्यांक ती उपलब्ध आसा. त्या देशाच्या सरका",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 36.91,
+      "status": "PASS",
+      "sources_returned": [
+        "National Overseas Scholarship For Scheduled Caste ",
+        "National Overseas Scholarship For Scheduled Tribes",
+        "Top Class Education For Scheduled Caste Students"
+      ]
+    },
+    {
+      "id": "KOK-10",
+      "language": "kok",
+      "category": "citizen_service",
+      "question": "भाषा संचालनालय गोवा कोणत्यो सेवा दिता?",
+      "ground_truth": "Training workshops seminars and Devnagari Computer Typing for government employees",
+      "answer": "गोंय अधिकृत भाशेचें संचालनालय सरकारी / सेमी सरकारी कर्मचार्यांक कार्यशाळा सेमिनार आनी देवनागरी संगणक टायपिंग प्रशिक्षण हांचे वरवीं प्रशिक्षण दिवपा सयत वेगवेगळ्यो सेवा दिता. देवनागरी संगणक टायपिंग प्रशिक्षणाची खाशेली येवजण ह्या संदर्भांत स्पश्टपणान उल्लेख करूंक ना. पूण संचालनालय कोंकणी आनी मराठी भाशा",
+      "answer_relevance": 1.0,
+      "source_accuracy": false,
+      "confidence": 1.0,
+      "language_ok": true,
+      "latency_s": 30.17,
+      "status": "PASS",
+      "sources_returned": [
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio"
+      ]
+    }
+  ]
+}
