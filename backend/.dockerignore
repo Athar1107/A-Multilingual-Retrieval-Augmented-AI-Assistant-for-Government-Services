@@ -1,0 +1,31 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Data (mounted as volume at runtime)
+/data/
+
+# Tests and eval (not needed in production image)
+tests/
+eval/
+
+# Docs
+*.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore

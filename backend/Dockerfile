@@ -1,43 +1,54 @@
 # Government AI Assistant — Backend Dockerfile
-# Multi-stage build for minimal production image
+# Build: docker build -t gov-ai-backend ./backend
+# Run via docker-compose.yml at project root.
 
-# ─── Stage 1: Builder ────────────────────────────────────────────────────────
-FROM python:3.11-slim AS builder
-
-WORKDIR /build
-
-# Install uv for fast dependency resolution
-RUN pip install --no-cache-dir uv==0.3.0
-
-# Copy dependency files first (leverages Docker layer cache)
-COPY pyproject.toml ./
-
-# Install production dependencies only
-RUN uv pip install --system --no-cache-dir -e ".[production]" 2>/dev/null || \
-    uv pip install --system --no-cache-dir .
-
-# ─── Stage 2: Production ─────────────────────────────────────────────────────
-FROM python:3.11-slim AS production
+FROM python:3.11-slim
 
 # Security: run as non-root user
-RUN useradd -m -u 1001 -s /bin/bash appuser
+RUN useradd -m -u 1001 appuser
 
 WORKDIR /app
 
-# Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Install system dependencies needed by PyMuPDF and sentence-transformers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy application code
+# Install Python dependencies
+# Separate layers: heavy ML libs cached unless requirements change
+COPY pyproject.toml ./
+
+# Install pip dependencies directly (no uv, no extras complexity)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+        httpx \
+        fastapi \
+        "uvicorn[standard]" \
+        pydantic \
+        pydantic-settings \
+        chromadb \
+        sentence-transformers \
+        rank-bm25 \
+        sentencepiece \
+        transformers \
+        torch --index-url https://download.pytorch.org/whl/cpu \
+        pymupdf
+
+# Copy application source
 COPY --chown=appuser:appuser app/ ./app/
+COPY --chown=appuser:appuser scripts/ ./scripts/
 
-# Switch to non-root user
+# Create data directory
+RUN mkdir -p /app/data/processed /app/data/indexes/chroma && \
+    chown -R appuser:appuser /app/data
+
 USER appuser
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/v1/health/live').raise_for_status()"
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD curl -sf http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
