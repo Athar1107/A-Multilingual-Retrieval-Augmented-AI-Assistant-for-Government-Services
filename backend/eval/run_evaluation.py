@@ -76,11 +76,31 @@ def answer_relevance(answer: str, ground_truth: str, language: str = "en") -> fl
 
 
 def source_accuracy(sources: list[dict], expected_doc_id: str) -> bool:
-    """True if any returned source URL contains the expected doc slug."""
+    """True if any returned source matches the expected document.
+
+    Checks:
+    1. Source URL contains the expected doc slug
+    2. Source title contains key words from the expected doc slug
+       (handles PDF sources where URL is a goa.gov.in path, not the slug)
+    """
+    # Build keyword set from doc slug (split on hyphens, ignore short tokens)
+    slug_words = {w for w in expected_doc_id.lower().split("-") if len(w) > 3
+                  and w not in {"goa", "scheme", "the", "for", "and", "from"}}
+
     for s in sources:
-        url = s.get("source_url", "") or s.get("title", "")
-        if expected_doc_id in url.lower():
+        url   = (s.get("source_url", "") or "").lower()
+        title = (s.get("title", "") or "").lower()
+
+        # Direct slug match in URL
+        if expected_doc_id in url:
             return True
+
+        # Title keyword overlap — if ≥2 slug keywords appear in the title
+        if slug_words:
+            hits = sum(1 for w in slug_words if w in title)
+            if hits >= min(2, len(slug_words)):
+                return True
+
     return False
 
 
