@@ -1,16 +1,27 @@
 """Request and response models shared by the API and RAG pipeline."""
 
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class QueryRequest(BaseModel):
     """A citizen query in Konkani or another supported input language."""
 
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
     text: str = Field(min_length=1, max_length=2_000)
-    language: str = Field(
+    language: Literal["en", "kok"] = Field(
         default="en",
-        description="ISO 639-1 language code for the query (e.g. 'en', 'kok', 'mr')",
+        description="Supported query language: 'en' (English) or 'kok' (Goan Konkani).",
     )
+
+    @field_validator("text")
+    @classmethod
+    def reject_empty_after_normalisation(cls, value: str) -> str:
+        if not value:
+            raise ValueError("Query text cannot be blank")
+        return value
 
 
 class SourceCitation(BaseModel):

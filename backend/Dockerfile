@@ -9,38 +9,35 @@ RUN useradd -m -u 1001 appuser
 
 WORKDIR /app
 
-# Install system dependencies needed by PyMuPDF and sentence-transformers
+# System deps for PyMuPDF and curl (health check)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-# Separate layers: heavy ML libs cached unless requirements change
-COPY pyproject.toml ./
+# Layer 1: core web deps (changes rarely)
+RUN pip install --no-cache-dir \
+    httpx \
+    fastapi \
+    "uvicorn[standard]" \
+    pydantic \
+    pydantic-settings
 
-# Install pip dependencies directly (no uv, no extras complexity)
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir \
-        httpx \
-        fastapi \
-        "uvicorn[standard]" \
-        pydantic \
-        pydantic-settings \
-        chromadb \
-        sentence-transformers \
-        rank-bm25 \
-        sentencepiece \
-        transformers \
-        torch --index-url https://download.pytorch.org/whl/cpu \
-        pymupdf
+# Layer 2: heavy ML deps (cached separately)
+RUN pip install --no-cache-dir \
+    sentence-transformers \
+    chromadb \
+    rank-bm25 \
+    sentencepiece \
+    transformers \
+    pymupdf
 
 # Copy application source
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser scripts/ ./scripts/
 
-# Create data directory
+# Create persistent data directories
 RUN mkdir -p /app/data/processed /app/data/indexes/chroma && \
     chown -R appuser:appuser /app/data
 

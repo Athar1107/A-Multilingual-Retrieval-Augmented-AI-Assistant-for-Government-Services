@@ -8,6 +8,7 @@ import logging
 from typing import Any, Protocol
 
 from app.config import CONFIDENCE_THRESHOLD, TOP_K_DEFAULT
+from app.rag.translation import devanagari_retrieval_hint
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,17 @@ class RAGPipeline:
             english_query = self.translator.konkani_to_english(query)
             logger.info("Translated query: '%s' → '%s'", query, english_query)
 
+        # The corpus is English. Do not retrieve raw Devanagari when a
+        # translation backend is offline. A domain hint also reinforces terms
+        # such as girls and scholarship after a successful translation.
+        retrieval_hint = devanagari_retrieval_hint(query) if language != "en" else None
+        has_english_output = any("a" <= char.lower() <= "z" for char in english_query)
+        if retrieval_hint and not has_english_output:
+            english_query = retrieval_hint
+            logger.warning("Translation unavailable; using retrieval hint: '%s'", retrieval_hint)
+        elif retrieval_hint:
+            english_query = f"{english_query} {retrieval_hint}"
+
         # Step 2: Retrieve relevant passages
         results = self.retriever.retrieve(english_query, top_k=top_k)
 
@@ -132,8 +144,16 @@ class RAGPipeline:
         # Step 4: Compute normalised retrieval score for routing.
         # RRF scores are typically small (~0.01–0.03); we normalise by
         # mapping the average to a [0, 1] range using a simple multiplier.
-        raw_avg = sum(r.get("rrf_score", 0.0) for r in results) / len(results)
-        normalised_score = min(raw_avg * 60, 1.0)  # RRF k=60, so max single score ~1/61
+        semantic_scores = [
+            float(result["semantic_score"])
+            for result in results
+            if "semantic_score" in result
+        ]
+        if semantic_scores:
+            normalised_score = max(semantic_scores)
+        else:
+            raw_avg = sum(r.get("rrf_score", 0.0) for r in results) / len(results)
+            normalised_score = min(raw_avg * 60, 1.0)
 
         # Step 5: Generate answer from context
         answer_text = self.generator.generate(english_query, context)

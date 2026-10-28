@@ -2,11 +2,16 @@
 
 import asyncio
 import logging
+import os
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from threading import Lock
 from typing import Any, AsyncGenerator
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from .schemas import QueryRequest, QueryResponse, SourceCitation
 
@@ -19,6 +24,38 @@ logger = logging.getLogger(__name__)
 
 _pipeline: Any = None
 _init_error: str | None = None
+
+
+class _SlidingWindowRateLimiter:
+    """Small in-process safety net; nginx enforces the production limit."""
+
+    def __init__(self, limit: int, window_seconds: int = 60) -> None:
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self._requests: dict[str, deque[float]] = defaultdict(deque)
+        self._lock = Lock()
+
+    def allowed(self, client_id: str) -> bool:
+        now = time.monotonic()
+        with self._lock:
+            requests = self._requests[client_id]
+            while requests and requests[0] <= now - self.window_seconds:
+                requests.popleft()
+            if len(requests) >= self.limit:
+                return False
+            requests.append(now)
+            return True
+
+
+QUERY_BODY_LIMIT_BYTES = 16 * 1024
+QUERY_RATE_LIMIT = int(os.environ.get("RATE_LIMIT_CHAT_PER_MINUTE", "20"))
+_query_limiter = _SlidingWindowRateLimiter(QUERY_RATE_LIMIT)
+
+
+def _allowed_origins() -> list[str]:
+    """Return explicitly configured browser origins, never a credentialed wildcard."""
+    configured = os.environ.get("ALLOWED_ORIGINS", "")
+    return [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
 
 
 def _get_pipeline() -> Any:
@@ -67,14 +104,44 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Allow the (future) frontend to call the API from a different origin.
+# The production UI is served by nginx on the same origin. Development origins
+# may be opted into via ALLOWED_ORIGINS; do not use a wildcard for this API.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+    max_age=600,
 )
+
+
+@app.middleware("http")
+async def security_controls(request: Request, call_next: Any) -> Response:
+    """Apply low-cost request limits and response hardening before model work."""
+    if request.method == "POST" and request.url.path == "/query":
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > QUERY_BODY_LIMIT_BYTES:
+                    return JSONResponse({"detail": "Request body is too large."}, status_code=413)
+            except ValueError:
+                return JSONResponse({"detail": "Invalid Content-Length header."}, status_code=400)
+        client_id = request.client.host if request.client else "unknown"
+        if not _query_limiter.allowed(client_id):
+            return JSONResponse(
+                {"detail": "Too many requests. Please try again shortly."},
+                status_code=429,
+                headers={"Retry-After": "60"},
+            )
+
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    response.headers["Cache-Control"] = "no-store" if request.url.path == "/query" else "no-cache"
+    return response
 
 
 @app.get("/health")
@@ -119,18 +186,26 @@ async def query(request: QueryRequest) -> QueryResponse:
     try:
         pipeline = _get_pipeline()
     except RuntimeError as exc:
+        logger.warning("RAG pipeline unavailable: %s", exc)
         raise HTTPException(
             status_code=503,
-            detail=f"RAG pipeline is not available: {exc}",
+            detail="The assistant is temporarily unavailable. Please try again shortly.",
         ) from exc
 
     # Run the synchronous pipeline in a thread to avoid blocking the
     # async event loop (embedding + BM25 + Ollama calls are CPU/IO heavy).
-    result = await asyncio.to_thread(
-        pipeline.answer,
-        query=request.text,
-        language=request.language,
-    )
+    try:
+        result = await asyncio.to_thread(
+            pipeline.answer,
+            query=request.text,
+            language=request.language,
+        )
+    except Exception:
+        logger.exception("Query processing failed")
+        raise HTTPException(
+            status_code=503,
+            detail="The assistant is temporarily unavailable. Please try again shortly.",
+        ) from None
 
     return QueryResponse(
         query=request.text,

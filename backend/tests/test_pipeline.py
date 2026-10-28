@@ -51,3 +51,38 @@ def test_pipeline_returns_no_results_when_retriever_empty() -> None:
     assert result["route"] == "no_results"
     assert result["confidence"] == 0.0
     assert result["sources"] == []
+
+
+def test_pipeline_uses_english_hint_when_translation_returns_raw_devanagari() -> None:
+    class RecordingRetriever:
+        def __init__(self) -> None:
+            self.query = ""
+
+        def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
+            self.query = query
+            return [{
+                "content": "Girls scholarship evidence",
+                "rrf_score": 0.5,
+                "title": "Girls Scholarship",
+                "source_url": "https://example.gov/girls",
+            }]
+
+    class UnavailableTranslator:
+        def konkani_to_english(self, text: str) -> str:
+            return text
+
+        def english_to_konkani(self, text: str) -> str:
+            return text
+
+    retriever = RecordingRetriever()
+    pipeline = RAGPipeline(
+        retriever=retriever,
+        generator=StubGenerator(),
+        router=StubRouter(),
+        translator=UnavailableTranslator(),
+    )
+
+    pipeline.answer("मुलींसाठी कोणत्या शिष्यवृत्ती योजना उपलब्ध आहेत?", language="kok")
+
+    assert "scholarship" in retriever.query
+    assert "girls" in retriever.query

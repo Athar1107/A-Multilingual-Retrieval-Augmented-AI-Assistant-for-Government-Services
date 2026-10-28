@@ -126,6 +126,10 @@ class Retriever:
                     "title": meta.get("title", ""),
                     "source_url": meta.get("source_url", ""),
                     "type": "dense",
+                    "semantic_score": round(
+                        max(0.0, min(1.0, 1.0 - float(dense_raw["distances"][0][idx]))),
+                        6,
+                    ),
                 })
 
         # --- BM25 sparse search over all ChromaDB chunks ---

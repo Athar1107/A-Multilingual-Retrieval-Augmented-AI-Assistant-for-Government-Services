@@ -44,3 +44,17 @@ To prevent user queries or third-party documents from hijacking LLM instructions
 
 ### 6. Safe Error Handling
 - Exceptions during pipeline execution return clean JSON error responses (`503 Service Unavailable` with friendly messages) without exposing Python stack traces, internal file paths, or system credentials to the client.
+
+### 7. Browser, API, and Deployment Boundaries
+- The production web client is served by Nginx on the same origin as the API. It uses a strict Content Security Policy and only external, same-origin JavaScript and CSS files.
+- User questions and model responses are rendered with DOM textContent, never interpolated as HTML. Official-source links are validated as http/https URLs and opened with noopener noreferrer.
+- CORS accepts only origins explicitly named in ALLOWED_ORIGINS; credentialed wildcard CORS is not enabled.
+- The query endpoint is protected at the proxy and application layers by a 16 KB request limit and per-minute rate limits. The ChromaDB, Ollama, and backend containers are not published directly to the host in the production Compose topology.
+- HTTP security headers include CSP, X-Content-Type-Options: nosniff, X-Frame-Options: DENY, Referrer-Policy: no-referrer, and a restrictive Permissions-Policy.
+
+## Operational Requirement
+
+Nginx in this repository terminates HTTP only. A public deployment must place
+it behind a TLS-enabled load balancer or configure TLS certificates directly
+in Nginx before accepting internet traffic. Security controls reduce risk; no
+application can honestly guarantee the absence of every future vulnerability.

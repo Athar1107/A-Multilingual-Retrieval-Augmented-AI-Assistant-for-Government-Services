@@ -46,6 +46,38 @@ _NLLB_ENGLISH       = "eng_Latn"
 _OVERRIDE = os.environ.get("TRANSLATION_MODEL", "auto").lower()
 _HF_TOKEN = os.environ.get("HF_TOKEN", "").strip() or None
 
+# Conservative retrieval help for frequent public-service terms in Devanagari.
+# It prevents an untranslated query from being sent unchanged to an
+# English-only index when the translation model is unavailable.
+_DEVANAGARI_RETRIEVAL_TERMS: tuple[tuple[str, str], ...] = (
+    ("शिष्यवृत्ती", "scholarship"),
+    ("शिश्यवृत्ती", "scholarship"),
+    ("मुलींसाठी", "girls"),
+    ("मुलीं", "girls"),
+    ("मुली", "girls"),
+    ("विद्यार्थ्यांसाठी", "students"),
+    ("विद्यार्थी", "students"),
+    ("योजना", "scheme"),
+    ("योजनां", "scheme"),
+    ("उपलब्ध", "available"),
+    ("आसात", "available"),
+    ("कोणत्या", "which"),
+    ("किती", "amount"),
+    ("पात्र", "eligibility"),
+    ("अर्ज", "application"),
+    ("कागदपत्र", "documents"),
+    ("सरकारी", "government"),
+)
+
+
+def devanagari_retrieval_hint(text: str) -> str | None:
+    """Return a conservative English retrieval hint for recognised Devanagari."""
+    if not any("\u0900" <= char <= "\u097f" for char in text):
+        return None
+    terms = [english for source, english in _DEVANAGARI_RETRIEVAL_TERMS if source in text]
+    unique_terms = list(dict.fromkeys(terms))
+    return " ".join(unique_terms) if len(unique_terms) >= 2 else None
+
 
 def _device() -> str:
     return "cuda" if torch.cuda.is_available() else "cpu"

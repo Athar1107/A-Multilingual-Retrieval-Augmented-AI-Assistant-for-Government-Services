@@ -16,7 +16,7 @@ Citizens can ask questions about government schemes in **English or Goan Konkani
 
 **Example queries:**
 - `"What is the benefit amount of PM scholarship scheme?"` → ₹2,500/month (boys), ₹3,000/month (girls)
-- `"मुलींसाठी कोणत्या शिष्यवृत्ती योजना उपलब्ध आहेत?"` → Konkani answer with sources
+- `"  "` → Konkani answer with sources
 
 ---
 
@@ -191,5 +191,13 @@ pytest tests/test_ingestion.py tests/test_pipeline.py tests/test_fallback_routin
 10 tests — all passing.
 
 ---
+
+### Frontend development
+
+The chatbot UI is a React + Vite application in the frontend folder. Run
+npm ci and then npm run dev from that folder. Vite proxies API calls to
+http://127.0.0.1:8000 during local development. For containers, docker compose
+up --build builds the Vite application into the Nginx image and serves it at
+http://localhost.
 
 *Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.*

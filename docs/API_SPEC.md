@@ -140,7 +140,9 @@ When normalized retrieval confidence is below `0.6`, `route` is marked `"fallbac
 ## Client Integration
 
 ### CORS Configuration
-CORS middleware is enabled globally (`allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`), permitting web frontends (including [`chat.html`](file:///c:/Users/athar/coding/model%20review/A%20Multilingual%20Retrieval-Augmented%20AI%20Assistant%20for%20Government%20Services/chat.html)) to call the API directly without proxy restrictions.
+The production frontend is served by Nginx on the same origin as the API.
+For development, CORS accepts only the comma-separated origins explicitly set
+in ALLOWED_ORIGINS; credentialed wildcard CORS is not enabled.
 
 ### cURL Example
 ```bash

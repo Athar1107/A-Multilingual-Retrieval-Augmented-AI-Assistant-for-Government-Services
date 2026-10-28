@@ -23,12 +23,12 @@ services:
 
   # ── Nginx reverse proxy ────────────────────────────────────────────────────
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
     container_name: gov-nginx
     ports:
       - "80:80"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
     networks:
@@ -41,12 +41,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: gov-backend
-    ports:
-      - "8000:8000"
     env_file:
       - ./backend/.env.example      # copy to backend/.env and fill in values
     environment:
-      - APP_ENV=development
+      - APP_ENV=production
+      - ALLOWED_ORIGINS=
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=llama3.2
       - CHROMA_INDEX_PATH=/app/data/indexes/chroma
@@ -75,8 +74,6 @@ services:
   chromadb:
     image: chromadb/chroma:latest
     container_name: gov-chromadb
-    ports:
-      - "8001:8000"
     environment:
       - IS_PERSISTENT=TRUE
       - PERSIST_DIRECTORY=/chroma/data
@@ -97,8 +94,6 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: gov-ollama
-    ports:
-      - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
     networks:
