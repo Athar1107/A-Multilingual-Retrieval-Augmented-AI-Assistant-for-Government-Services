@@ -28,8 +28,6 @@ import logging
 import os
 from typing import Any
 
-import torch
-
 logger = logging.getLogger(__name__)
 
 # ── Model identifiers ─────────────────────────────────────────────────────
@@ -80,6 +78,8 @@ def devanagari_retrieval_hint(text: str) -> str | None:
 
 
 def _device() -> str:
+    import torch
+
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -112,6 +112,8 @@ class _IndicTrans2Backend:
         logger.info("IndicTrans2 loaded on %s.", dev)
 
     def konkani_to_english(self, text: str) -> str:
+        import torch
+
         # gom_Deva = Goan Konkani in Devanagari (ISO 639-3: gom)
         # kok_Deva would be standard Konkani but is not in the 200M model vocabulary
         formatted = f"gom_Deva eng_Latn {text}"
@@ -123,6 +125,8 @@ class _IndicTrans2Backend:
         return self._tok_i2e.decode(out[0], skip_special_tokens=True).strip()
 
     def english_to_konkani(self, text: str) -> str:
+        import torch
+
         # gom_Deva = Goan Konkani in Devanagari
         formatted = f"eng_Latn gom_Deva {text}"
         inputs = self._tok_e2i(
@@ -158,6 +162,8 @@ class _NLLBBackend:
         )
 
     def _translate(self, text: str, src_lang: str, tgt_lang: str) -> str:
+        import torch
+
         self._tok.src_lang = src_lang
         inputs = self._tok(
             text, return_tensors="pt", padding=True, truncation=True, max_length=256
