@@ -30,10 +30,42 @@ TEST_KEY = "test-admin-secret-key-xyz"
 
 @pytest.fixture(autouse=True)
 def _admin_env(monkeypatch):
-    """Set standard admin test credentials."""
+    """Set standard admin test credentials and fallback corpus for headless CI runners."""
     monkeypatch.setenv("ADMIN_API_KEY", TEST_KEY)
     monkeypatch.setenv("ADMIN_USERNAME", "Atharv")
     monkeypatch.setenv("API_KEY", "dev-secret-key-123")
+
+    # If ChromaDB is not installed or has no indexed chunks (such as on a fresh CI runner),
+    # provide a realistic stub corpus so that tests are self-contained and reproducible.
+    from app.admin import services
+    try:
+        live_ids, live_metas = services.load_chroma_rows()
+        if not live_ids:
+            raise RuntimeError("Chroma index is empty")
+    except Exception:
+        mock_ids = ["chunk-stse-1", "chunk-pmss-1"]
+        mock_metas = [
+            {"scheme_id": "stse-goa", "title": "State Talent Search Examination", "source_url": "https://goa.gov.in/stse"},
+            {"scheme_id": "pmss", "title": "Prime Minister Scholarship Scheme", "source_url": "https://myscheme.gov.in/pmss"},
+        ]
+        monkeypatch.setattr(services, "load_chroma_rows", lambda: (mock_ids, mock_metas))
+
+        def _mock_corpus_doc(doc_id: str):
+            return {
+                "doc_id": doc_id,
+                "title": "State Talent Search Examination",
+                "source_url": "https://goa.gov.in/stse",
+                "chunk_count": 1,
+                "chunks": [
+                    {
+                        "chunk_id": f"chunk-{doc_id}-1",
+                        "text": "Official scheme eligibility guidelines and benefits documentation.",
+                        "token_count": 12,
+                        "metadata": {"source_url": "https://goa.gov.in/stse"},
+                    }
+                ],
+            }
+        monkeypatch.setattr(services, "corpus_document", _mock_corpus_doc)
 
 
 def test_admin_auth_401_on_missing_or_invalid_key():
