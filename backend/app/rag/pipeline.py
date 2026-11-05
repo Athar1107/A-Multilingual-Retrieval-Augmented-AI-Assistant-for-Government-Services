@@ -4,10 +4,12 @@ This module is the single orchestration point that connects retrieval,
 generation, translation, and fallback routing into a coherent workflow.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Protocol
 
-from app.config import CONFIDENCE_THRESHOLD, TOP_K_DEFAULT
+from app.config import CONFIDENCE_THRESHOLD, TOP_K_DEFAULT, USE_RETRIEVAL_HINTS
 from app.rag.translation import devanagari_retrieval_hint
 
 logger = logging.getLogger(__name__)
@@ -24,10 +26,17 @@ class RetrieverProtocol(Protocol):
 
 class GeneratorProtocol(Protocol):
     def generate(self, query: str, context: str) -> str: ...
+    def paraphrase_query(self, query: str) -> str: ...
 
 
 class FallbackRouterProtocol(Protocol):
-    def route(self, query: str, retrieval_score: float, answer: str) -> dict[str, Any]: ...
+    def route(
+        self,
+        query: str,
+        retrieval_score: float,
+        answer: str,
+        is_recovered: bool = False,
+    ) -> dict[str, Any]: ...
 
 
 class TranslationProtocol(Protocol):
@@ -50,10 +59,10 @@ class RAGPipeline:
         self,
         retriever: RetrieverProtocol | None = None,
         generator: GeneratorProtocol | None = None,
-        translator: TranslationProtocol | None = None,
+        translator: TranslationProtocol | None | bool = None,
         router: FallbackRouterProtocol | None = None,
+        use_retrieval_hints: bool = USE_RETRIEVAL_HINTS,
     ) -> None:
-        # Lazy-import concrete classes only when no stubs are supplied.
         if retriever is None:
             from app.rag.retriever import Retriever
             retriever = Retriever()
@@ -67,9 +76,8 @@ class RAGPipeline:
         self.retriever = retriever
         self.generator = generator
         self.router = router
+        self.use_retrieval_hints = use_retrieval_hints
 
-        # Translation: False = disabled, None = auto-load best available backend
-        # Pass translator=False in tests to skip loading heavy ML models.
         if translator is False:
             self.translator: TranslationProtocol | None = None
         elif translator is not None:
@@ -86,6 +94,34 @@ class RAGPipeline:
                 )
                 self.translator = None
 
+    def _compute_confidence(self, results: list[dict[str, Any]]) -> float:
+        """Compute retrieval confidence score from dense semantic similarities or RRF."""
+        if not results:
+            return 0.0
+        semantic_scores = [
+            float(result["semantic_score"])
+            for result in results
+            if "semantic_score" in result and result["semantic_score"] is not None
+        ]
+        if semantic_scores:
+            return round(max(semantic_scores), 4)
+
+        raw_avg = sum(float(r.get("rrf_score", 0.0)) for r in results) / len(results)
+        return round(min(max(raw_avg, 0.0), 1.0), 4)
+
+    def _route(
+        self,
+        query: str,
+        score: float,
+        answer: str,
+        is_recovered: bool = False,
+    ) -> dict[str, Any]:
+        """Safely invoke router.route supporting both 3-arg and 4-arg signatures."""
+        try:
+            return self.router.route(query, score, answer, is_recovered=is_recovered)
+        except TypeError:
+            return self.router.route(query, score, answer)
+
     def answer(
         self,
         query: str,
@@ -99,77 +135,127 @@ class RAGPipeline:
         query:
             The user's question text.
         language:
-            ISO 639-1 code.  Non-English queries are translated to English
-            for retrieval, and the answer is translated back.
+            ISO 639-1 code ('en' or 'kok'). Non-English queries are translated
+            to English for retrieval, and answers are always translated back.
         top_k:
             Maximum number of retrieval results to consider.
 
         Returns
         -------
-        dict with ``answer``, ``confidence``, ``sources``, ``retrieval_results``,
-        and ``route``.
+        dict with ``query``, ``answer``, ``confidence``, ``sources``, ``retrieval_results``,
+        ``retrieved_doc_ids``, ``route``, ``translator_backend``, and ``retrieval_hint_applied``.
         """
         # Step 1: Translate non-English queries to English for retrieval
         english_query = query
         if language != "en" and self.translator:
             english_query = self.translator.konkani_to_english(query)
-            logger.info("Translated query: '%s' → '%s'", query, english_query)
+            logger.info("Translated query: '%s' → '%s'", query[:80], english_query[:80])
 
-        # The corpus is English. Do not retrieve raw Devanagari when a
-        # translation backend is offline. A domain hint also reinforces terms
-        # such as girls and scholarship after a successful translation.
-        retrieval_hint = devanagari_retrieval_hint(query) if language != "en" else None
-        has_english_output = any("a" <= char.lower() <= "z" for char in english_query)
-        if retrieval_hint and not has_english_output:
-            english_query = retrieval_hint
-            logger.warning("Translation unavailable; using retrieval hint: '%s'", retrieval_hint)
-        elif retrieval_hint:
-            english_query = f"{english_query} {retrieval_hint}"
+        # Step 1b: Optional hand-made retrieval hint (governed by USE_RETRIEVAL_HINTS)
+        retrieval_hint_applied = False
+        if self.use_retrieval_hints and language != "en":
+            hint = devanagari_retrieval_hint(query)
+            has_english_output = any("a" <= char.lower() <= "z" for char in english_query)
+            if hint and not has_english_output:
+                english_query = hint
+                retrieval_hint_applied = True
+                logger.info("Translation unavailable; applied retrieval hint: '%s'", hint)
+            elif hint:
+                english_query = f"{english_query} {hint}"
+                retrieval_hint_applied = True
+                logger.info("Reinforced query with retrieval hint: '%s'", hint)
 
-        # Step 2: Retrieve relevant passages
+        # Step 2: Primary retrieval
         results = self.retriever.retrieve(english_query, top_k=top_k)
 
         if not results:
+            no_results_ans = (
+                "No reliable information found for your query. Please verify with the official "
+                "scheme portal at https://www.myscheme.gov.in or contact the relevant government office."
+            )
+            if language != "en" and self.translator:
+                no_results_ans = self.translator.english_to_konkani(no_results_ans)
+
             return {
-                "answer": "No relevant information found for your query.",
+                "query": query,
+                "answer": no_results_ans,
                 "confidence": 0.0,
                 "sources": [],
                 "retrieval_results": [],
-                "route": "no_results",
+                "retrieved_doc_ids": [],
+                "route": "fallback_failed",
+                "translator_backend": getattr(self.translator, "backend_name", "none") if self.translator else "none",
+                "retrieval_hint_applied": retrieval_hint_applied,
             }
 
-        # Step 3: Build context from retrieved passages
-        context = "\n\n".join(r["content"] for r in results)
+        # Step 3: Compute confidence
+        confidence_score = self._compute_confidence(results)
+        threshold = getattr(self.router, "confidence_threshold", CONFIDENCE_THRESHOLD)
 
-        # Step 4: Compute normalised retrieval score for routing.
-        # RRF scores are typically small (~0.01–0.03); we normalise by
-        # mapping the average to a [0, 1] range using a simple multiplier.
-        semantic_scores = [
-            float(result["semantic_score"])
-            for result in results
-            if "semantic_score" in result
-        ]
-        if semantic_scores:
-            normalised_score = max(semantic_scores)
+        # Step 4: Routing & Attempt 2 (Alternate retrieval on low confidence)
+        if confidence_score >= threshold:
+            # Direct route
+            context = "\n\n".join(r["content"] for r in results)
+            answer_text = self.generator.generate(english_query, context)
+            routed = self._route(english_query, confidence_score, answer_text, is_recovered=False)
         else:
-            raw_avg = sum(r.get("rrf_score", 0.0) for r in results) / len(results)
-            normalised_score = min(raw_avg * 60, 1.0)
+            # Low confidence: Attempt 2 (Alternate retrieval path)
+            logger.info("Confidence %.4f < %.2f; attempting fallback recovery...", confidence_score, threshold)
+            alt_query = None
 
-        # Step 5: Generate answer from context
-        answer_text = self.generator.generate(english_query, context)
+            # Path A: Hindi pivot for non-English queries if supported
+            if language != "en" and self.translator and hasattr(self.translator, "konkani_to_english_pivot"):
+                try:
+                    alt_query = self.translator.konkani_to_english_pivot(query)
+                    logger.info("Attempt 2 Hindi pivot query: '%s' → '%s'", query[:80], alt_query[:80])
+                except Exception as exc:
+                    logger.warning("Hindi pivot attempt failed: %s", exc)
 
-        # Step 6: Route through fallback logic
-        routed = self.router.route(english_query, normalised_score, answer_text)
+            # Path B: LLM search query reformulation / paraphrase
+            if (not alt_query or alt_query == english_query) and hasattr(self.generator, "paraphrase_query"):
+                try:
+                    alt_query = self.generator.paraphrase_query(english_query)
+                    logger.info("Attempt 2 LLM paraphrase query: '%s' → '%s'", english_query[:80], alt_query[:80])
+                except Exception as exc:
+                    logger.warning("LLM paraphrase attempt failed: %s", exc)
 
-        # Step 7: Translate answer back to user's language if needed
-        if language != "en" and self.translator and routed["route"] == "direct":
-            routed["answer"] = self.translator.english_to_konkani(routed["answer"])
+            results_2: list[dict[str, Any]] = []
+            if alt_query and alt_query.strip() and alt_query.strip() != english_query.strip():
+                results_2 = self.retriever.retrieve(alt_query, top_k=top_k)
 
-        # Step 8: Extract unique source citations
+            conf_2 = self._compute_confidence(results_2) if results_2 else 0.0
+
+            if conf_2 >= threshold:
+                # Fallback recovered!
+                results = results_2
+                confidence_score = conf_2
+                context = "\n\n".join(r["content"] for r in results)
+                answer_text = self.generator.generate(alt_query, context)
+                routed = self._route(alt_query, confidence_score, answer_text, is_recovered=True)
+                logger.info("Fallback recovered successfully with confidence %.4f", conf_2)
+            else:
+                # Fallback failed
+                routed = self._route(english_query, confidence_score, "", is_recovered=False)
+                results = []  # Discard low-confidence unrelated sources
+                logger.info("Fallback failed; returning caveat guidance.")
+
+        # Step 5: ALWAYS translate the final answer back to the user's language, including on fallback!
+        if language != "en" and self.translator:
+            try:
+                routed["answer"] = self.translator.english_to_konkani(routed["answer"])
+            except Exception as exc:
+                logger.warning("Failed translating final response back to %s: %s", language, exc)
+
+        # Step 6: Extract unique sources and doc IDs
         seen_urls: set[str] = set()
         sources: list[dict[str, str]] = []
+        retrieved_doc_ids: list[str] = []
+
         for r in results:
             url = r.get("source_url", "")
+            doc_id = r.get("scheme_id") or r.get("title", "")
+            if doc_id and doc_id not in retrieved_doc_ids:
+                retrieved_doc_ids.append(doc_id)
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 sources.append({
@@ -177,10 +263,20 @@ class RAGPipeline:
                     "source_url": url,
                 })
 
+        translator_backend = (
+            getattr(self.translator, "backend_name", "unknown")
+            if self.translator
+            else "none"
+        )
+
         return {
+            "query": query,
             "answer": routed["answer"],
             "confidence": routed["confidence"],
+            "route": routed["route"],
             "sources": sources,
             "retrieval_results": results,
-            "route": routed["route"],
+            "retrieved_doc_ids": retrieved_doc_ids,
+            "translator_backend": translator_backend,
+            "retrieval_hint_applied": retrieval_hint_applied,
         }

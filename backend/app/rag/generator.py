@@ -95,6 +95,37 @@ class AnswerGenerator:
             logger.exception("Unexpected error during generation")
             return f"Generation error: {e}"
 
+    def paraphrase_query(self, query: str) -> str:
+        """Paraphrase a query into search keywords for official government schemes."""
+        prompt = (
+            "You are a search query reformulation tool for official Indian government schemes. "
+            "Convert the user question into a concise English search query (key official scheme nouns and terms). "
+            "Output ONLY the search query keywords, nothing else.\n\n"
+            f"Question: {query}\n"
+            "Keywords:"
+        )
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(
+                    f"{self.ollama_url}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "num_predict": 30,
+                            "temperature": 0.2,
+                        },
+                    },
+                )
+            if response.status_code == 200:
+                result = response.json()
+                text = result.get("response", "").strip().strip('"').strip("'")
+                return text if text else query
+        except Exception as exc:
+            logger.warning("Query paraphrase failed: %s", exc)
+        return query
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

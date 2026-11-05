@@ -1,0 +1,693 @@
+{
+  "scorer_version": "v2.0_audited",
+  "summary": {
+    "scorer_version": "v2.0_audited",
+    "total": 25,
+    "passed": 24,
+    "errors": 0,
+    "pass_rate": 0.96,
+    "avg_answer_relevance": 0.881,
+    "source_accuracy": 0.96,
+    "avg_confidence": 0.653,
+    "language_accuracy": 1.0,
+    "avg_latency_s": 16.0,
+    "routes": {
+      "direct": 19,
+      "fallback_recovered": 1,
+      "fallback_failed": 5
+    }
+  },
+  "results": [
+    {
+      "id": "EN-01",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the monthly scholarship amount for boys under the Prime Minister Scholarship Scheme?",
+      "ground_truth": "Rs. 2500 per month for boys",
+      "answer": "The monthly scholarship amount for boys under the Prime Minister Scholarship Scheme is ₹2,500 per month. This amount is paid annually to the selected students. The scheme is managed by the Kendriya Sainik Board (KSB).",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.6729,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Prime Minister's Scholarship Scheme",
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Top Class Education For Scheduled Caste Students",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 30.61,
+      "status": "PASS",
+      "sources_returned": [
+        "Prime Minister's Scholarship Scheme",
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Top Class Education For Scheduled Caste Students"
+      ]
+    },
+    {
+      "id": "EN-02",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the monthly scholarship amount for girls under the Prime Minister Scholarship Scheme?",
+      "ground_truth": "Rs. 3000 per month for girls",
+      "answer": "The monthly scholarship amount for girls under the Prime Minister Scholarship Scheme is ₹3,000 per month. This is as per the details provided in the context. The scheme is also known as the Prime Minister's Scholarship Scheme (PMSS).",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.687,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Prime Minister's Scholarship Scheme",
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Begum Hazrat Mahal National Scholarship Program",
+        "Top Class Education For Scheduled Caste Students"
+      ],
+      "language_ok": true,
+      "latency_s": 10.42,
+      "status": "PASS",
+      "sources_returned": [
+        "Prime Minister's Scholarship Scheme",
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Begum Hazrat Mahal National Scholarship Program"
+      ]
+    },
+    {
+      "id": "EN-03",
+      "language": "en",
+      "category": "scholarship",
+      "question": "Who is eligible for the Post Graduate Indira Gandhi Scholarship for Single Girl Child?",
+      "ground_truth": "Girl students who are the only girl child in the family and admitted to first year of PG courses",
+      "answer": "The Post Graduate Indira Gandhi Scholarship For Single Girl Child is eligible for girl students who are admitted in the first year of PG courses in any designated university or postgraduate college and happen to be the only girl child in their family. Additionally, girl students without having any brothers or those who are twin daughters/fraternal daughters may also apply. The applicant must be a citizen of India.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.8134,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Savitribai Jyotirao Phule Fellowship For Single Girl Child",
+        "Swami Vivekananda Single Girl Child Fellowship for Research in Social Sciences"
+      ],
+      "language_ok": true,
+      "latency_s": 19.37,
+      "status": "PASS",
+      "sources_returned": [
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Savitribai Jyotirao Phule Fellowship For Single Gi",
+        "Swami Vivekananda Single Girl Child Fellowship for"
+      ]
+    },
+    {
+      "id": "EN-04",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the annual fellowship amount under the Post Graduate Indira Gandhi Scholarship?",
+      "ground_truth": "Rs. 36200 per annum",
+      "answer": "The annual fellowship amount under the Post Graduate Indira Gandhi Scholarship For Single Girl Child is ₹ 36,200/- per annum. This amount is paid on an annual basis and is applicable for the full duration of a PG course, which is two years. The scheme aims to compensate direct costs of girl education at all levels.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.6955,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Rajiv Gandhi National Fellowship For Scheduled Caste Candidates",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Savitribai Jyotirao Phule Fellowship For Single Girl Child"
+      ],
+      "language_ok": true,
+      "latency_s": 10.78,
+      "status": "PASS",
+      "sources_returned": [
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Rajiv Gandhi National Fellowship For Scheduled Cas",
+        "Tribal Welfare Department Goa — Citizen Charter (S"
+      ]
+    },
+    {
+      "id": "EN-05",
+      "language": "en",
+      "category": "scholarship_goa",
+      "question": "What is the STSE scholarship amount per student in Goa?",
+      "ground_truth": "Rs. 2500 per student",
+      "answer": "The Science Talent Search Examination (STSE) scholarship amount per student in Goa is Rs. 2,500/- per student. This amount is awarded to the Meritorious students of classes VIII, IX, X, XI and XII based on their performance at the STSE every year from the State of Goa. The total number of scholarships awarded is 200.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.702,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "State Science Talent Search Examination (STSE) Goa 2025-26",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "Sant Sohirobanath Ambiye Dnyanvruddhi Shishyavrutti- Bursary Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Prime Minister's Scholarship Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 19.35,
+      "status": "PASS",
+      "sources_returned": [
+        "State Science Talent Search Examination (STSE) Goa",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "Sant Sohirobanath Ambiye Dnyanvruddhi Shishyavrutt"
+      ]
+    },
+    {
+      "id": "EN-06",
+      "language": "en",
+      "category": "scholarship_goa",
+      "question": "How many scholarships are awarded under STSE in Goa each year?",
+      "ground_truth": "200 scholarships",
+      "answer": "A total of 200 scholarships are awarded to Meritorious students of classes VIII, IX, X, XI, and XII under the Science Talent Search Examination (STSE) scheme every year in Goa. The scholarships are awarded based on the performance of students at the STSE examination. The scheme was started in 2008-09 and is conducted annually by the Goa State Council of Educational Research and Training (GSCERT). The scholarships are worth Rs. 2,500 each.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.7356,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "State Science Talent Search Examination (STSE) Goa 2025-26",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "SCERT Goa — Conducted Scholarship Schemes Details",
+        "The Goa Archaeological Research Fellowship Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 13.89,
+      "status": "PASS",
+      "sources_returned": [
+        "State Science Talent Search Examination (STSE) Goa",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "EN-07",
+      "language": "en",
+      "category": "language_scheme",
+      "question": "What is the Bhasha Puraskar Yojana?",
+      "ground_truth": "A scheme by the Government of Goa to award scholars and writers who have dedicated work in Konkani Marathi and Sanskrit languages",
+      "answer": "The Bhasha Puraskar Yojana is a government scheme aimed at recognizing and appreciating scholars, writers, and language workers who have dedicated their work in Sanskrit, Konkani, and Marathi languages. The main objective of the scheme is to bring out the hidden qualities and expose the scholastic work of language scholars, while also providing financial support to those who have dedicated their careers for the interest of language. The awards are presented in three languages: Sanskrit, Konkani, and Marathi.",
+      "back_translation": "",
+      "answer_relevance": 0.846,
+      "source_accuracy": true,
+      "confidence": 0.6584,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Bhasha Puraskar Yojana — Language Award Scheme (Konkani/Marathi/Sanskrit)",
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)"
+      ],
+      "language_ok": true,
+      "latency_s": 27.17,
+      "status": "PASS",
+      "sources_returned": [
+        "Bhasha Puraskar Yojana — Language Award Scheme (Ko",
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Tribal Welfare Department Goa — Citizen Charter (S"
+      ]
+    },
+    {
+      "id": "EN-08",
+      "language": "en",
+      "category": "language_scheme",
+      "question": "In which year was the Bhasha Puraskar Yojana constituted?",
+      "ground_truth": "2013",
+      "answer": "The Bhasha Puraskar Yojana was constituted in the year 2013. The main objective of the scheme is to bring out the hidden qualities and expose the scholastic work of the language scholar. The awards are presented by the name of the following: a) Durgaram Upadhe Sanskrit Bhasha Puraskar, b) Dyanpeeth awardee Ravindra Kelekar Konkani Bhasha Puraskar, and c) B.D. Satoskar Marathi Bhasha Puraskar.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.653,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Bhasha Puraskar Yojana — Language Award Scheme (Konkani/Marathi/Sanskrit)",
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)"
+      ],
+      "language_ok": true,
+      "latency_s": 15.15,
+      "status": "PASS",
+      "sources_returned": [
+        "Bhasha Puraskar Yojana — Language Award Scheme (Ko",
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Tribal Welfare Department Goa — Citizen Charter (S"
+      ]
+    },
+    {
+      "id": "EN-09",
+      "language": "en",
+      "category": "internship",
+      "question": "What is the DPIIT internship stipend per month?",
+      "ground_truth": "Rs. 10000 per month",
+      "answer": "The DPIIT Internship Scheme provides a stipend of ₹10,000/- per month to interns. This stipend amount is paid to interns after the completion of their internship period. The stipend amount is a benefit of the internship scheme, which aims to provide exposure to students and equip them with industry experience.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.7446,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "DPIIT Internship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Post Matric Scholarship Scheme For The Students Belonging To Scheduled Tribe For Studies In India",
+        "Internship Scheme For PG/Research Students In Directorate General Of Trade Remedies (DGTR)"
+      ],
+      "language_ok": true,
+      "latency_s": 17.29,
+      "status": "PASS",
+      "sources_returned": [
+        "DPIIT Internship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer",
+        "Post Matric Scholarship Scheme For The Students Be"
+      ]
+    },
+    {
+      "id": "EN-10",
+      "language": "en",
+      "category": "internship",
+      "question": "What is the minimum and maximum duration of DPIIT internship?",
+      "ground_truth": "Minimum one month and maximum three months",
+      "answer": "The DPIIT Internship Scheme offers an internship period ranging from one month to three months. The minimum duration is one month, and the maximum duration is three months.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.7151,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "DPIIT Internship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Post Graduate Scholarship for University Rank Holders Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 7.43,
+      "status": "PASS",
+      "sources_returned": [
+        "DPIIT Internship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer",
+        "Post Graduate Scholarship for University Rank Hold"
+      ]
+    },
+    {
+      "id": "EN-11",
+      "language": "en",
+      "category": "internship",
+      "question": "Who can apply for the AICTE Mitacs Globalink Research Internship?",
+      "ground_truth": "Eligible Indian undergraduate students in Science Technology Engineering and Mathematics disciplines",
+      "answer": "According to the context, the AICTE Mitacs Globalink Research Internship (GRI) Scheme is open to eligible Indian undergraduate students who are 3rd-year full-time students of an undergraduate program (B.E / B.Tech) in an AICTE-approved institution. The applicants must have a minimum CGPA / GPA of 85% in the 2nd year. The scheme is specifically designed for students in the Science, Technology, Engineering, and Mathematics disciplines.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.7175,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "AICTE – Mitacs Globalink Research Internship (GRI) Scheme",
+        "Internship Scheme For PG/Research Students In Directorate General Of Trade Remedies (DGTR)",
+        "Post Graduate Scholarship Scheme for GATE/GPAT Qualified Students-AICTE ",
+        "NITI Internship Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 20.55,
+      "status": "PASS",
+      "sources_returned": [
+        "AICTE – Mitacs Globalink Research Internship (GRI)",
+        "Internship Scheme For PG/Research Students In Dire",
+        "Post Graduate Scholarship Scheme for GATE/GPAT Qua"
+      ]
+    },
+    {
+      "id": "EN-12",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the National Means-cum-Merit Scholarship Scheme?",
+      "ground_truth": "A centrally sponsored scheme to award scholarships to meritorious students from economically weaker sections to prevent dropout at class VIII",
+      "answer": "The National Means-cum-Merit Scholarship Scheme is a Central Sector Scheme launched in 2008 by the Department of School Education & Literacy, Ministry of Education, Government of India. The objective of the scheme is to award scholarships to meritorious students of economically weaker sections to arrest their drop out at class VIII and encourage them to continue their education at secondary stage. The scheme aims to provide financial assistance to gifted or meritorious students, with a maximum period of four years.",
+      "back_translation": "",
+      "answer_relevance": 0.733,
+      "source_accuracy": true,
+      "confidence": 0.8179,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "National Means-cum-Merit Scholarship Scheme",
+        "National Talent Scholarship Postgraduate",
+        "National Overseas Scholarship For Scheduled Tribes (ST) Students",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Merit·cum·Means Scholarships For Under Graduate Studies In Various Branches Of Agriculture And Animal Science Subjects"
+      ],
+      "language_ok": true,
+      "latency_s": 21.25,
+      "status": "PASS",
+      "sources_returned": [
+        "National Means-cum-Merit Scholarship Scheme",
+        "National Talent Scholarship Postgraduate",
+        "National Overseas Scholarship For Scheduled Tribes"
+      ]
+    },
+    {
+      "id": "EN-13",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the National Overseas Scholarship for Scheduled Caste candidates?",
+      "ground_truth": "A scholarship scheme by Ministry of Social Justice and Empowerment for SC students to pursue higher education abroad",
+      "answer": "The National Overseas Scholarship For Scheduled Caste Etc. Candidates is a scholarship scheme by the Ministry of Social Justice & Empowerment for regular, full-time students from Scheduled Castes, Denotified Nomadic and Semi Nomadic Tribes, Landless Agricultural Labourers, and Traditional Artisans. The scheme aims to provide higher education opportunities, specifically Master degree or Ph.D courses, by studying abroad in Institutions/Universities accredited by the Government/authorized body of that country.",
+      "back_translation": "",
+      "answer_relevance": 0.917,
+      "source_accuracy": true,
+      "confidence": 0.6772,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "National Overseas Scholarship For Scheduled Caste Etc. Candidates",
+        "National Overseas Scholarship For Scheduled Tribes (ST) Students",
+        "Top Class Education For Scheduled Caste Students",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "Rajiv Gandhi National Fellowship For Scheduled Caste Candidates"
+      ],
+      "language_ok": true,
+      "latency_s": 20.51,
+      "status": "PASS",
+      "sources_returned": [
+        "National Overseas Scholarship For Scheduled Caste ",
+        "National Overseas Scholarship For Scheduled Tribes",
+        "Top Class Education For Scheduled Caste Students"
+      ]
+    },
+    {
+      "id": "EN-14",
+      "language": "en",
+      "category": "scholarship_goa",
+      "question": "What is the Laptop-e Scheme in Goa?",
+      "ground_truth": "A scheme providing laptops to students in Goa",
+      "answer": "The Laptop-e Scheme is a government initiative launched by the Directorate of Education, Government of Goa. The scheme aims to equip Class XI students with individual portable computer systems to enhance digital learning, knowledge acquisition, and skill attainment for employment or self-employment. The scheme provides one entry-level portable computer system, including a DVD-ROM drive, Wi-Fi connectivity, multimedia speakers, and a 15-inch or more screen size, with a preloaded Open Standards Supported Operating System.",
+      "back_translation": "",
+      "answer_relevance": 0.6,
+      "source_accuracy": true,
+      "confidence": 0.7183,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Laptop-e Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Pre-Matric Scholarship Scheme for the Children of Parents/Guardians Engaged in Unclean and Hazardous Occupations - Goa",
+        "Sant Sohirobanath Ambiye Dnyanvruddhi Shishyavrutti- Bursary Scheme",
+        "Savitribai Jyotirao Phule Fellowship For Single Girl Child"
+      ],
+      "language_ok": true,
+      "latency_s": 18.17,
+      "status": "PASS",
+      "sources_returned": [
+        "Laptop-e Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer",
+        "Pre-Matric Scholarship Scheme for the Children of "
+      ]
+    },
+    {
+      "id": "EN-15",
+      "language": "en",
+      "category": "citizen_service",
+      "question": "What services does the Directorate of Official Language Goa provide?",
+      "ground_truth": "Imparting training through workshops seminars and Devnagari Computer Typing training to Government and Semi Government employees",
+      "answer": "The Directorate of Official Language Goa provides various services, including imparting training through workshops, seminars, and Devnagari Computer Typing training to Government/Semi Government employees. The Directorate also deals with the implementation of the Goa Official Language Act 1987 and initiatives for maximum use of Official Language in Administration and other fields of knowledge. Additionally, the Directorate provides training and development schemes for the promotion and development of Konkani and Marathi languages.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.7601,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Lokbhasha Sangrah Yojana — Folk Language Collection Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 19.23,
+      "status": "PASS",
+      "sources_returned": [
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio"
+      ]
+    },
+    {
+      "id": "EN-16",
+      "language": "en",
+      "category": "language_scheme",
+      "question": "What is the Lokbhasha Sangrah Yojana?",
+      "ground_truth": "A scheme for collection and preservation of folk language materials in Goa",
+      "answer": "There is no mention of the \"Lokbhasha Sangrah Yojana\" in the provided context.",
+      "back_translation": "",
+      "answer_relevance": 0.0,
+      "source_accuracy": false,
+      "confidence": 0.5343,
+      "route": "fallback_recovered",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Bhasha Puraskar Yojana — Language Award Scheme (Konkani/Marathi/Sanskrit)"
+      ],
+      "language_ok": true,
+      "latency_s": 23.0,
+      "status": "FAIL",
+      "sources_returned": [
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Bhasha Puraskar Yojana — Language Award Scheme (Ko"
+      ]
+    },
+    {
+      "id": "EN-17",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the PM-YASASVI scheme?",
+      "ground_truth": "Top Class College Education scheme for OBC EBC and DNT students",
+      "answer": "The PM-YASASVI scheme is a sub-scheme under the umbrella scheme \"PM Young Achievers Scholarship Award Scheme for Vibrant India for OBCs and Others\". It aims to provide full financial support to students belonging to OBC, EBC, and DNT categories for pursuing studies beyond Class XII. The scheme is funded by the Ministry of Social Justice and Empowerment on a 100% basis.",
+      "back_translation": "",
+      "answer_relevance": 0.667,
+      "source_accuracy": true,
+      "confidence": 0.5663,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "PM-YASASVI: Top Class College Education for OBC, EBC and DNT Students",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Prime Minister's Scholarship Scheme",
+        "Savitribai Jyotirao Phule Fellowship For Single Girl Child",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)"
+      ],
+      "language_ok": true,
+      "latency_s": 18.4,
+      "status": "PASS",
+      "sources_returned": [
+        "PM-YASASVI: Top Class College Education for OBC, E",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer",
+        "Prime Minister's Scholarship Scheme"
+      ]
+    },
+    {
+      "id": "EN-18",
+      "language": "en",
+      "category": "scholarship",
+      "question": "What is the Savitribai Jyotirao Phule Fellowship for Single Girl Child?",
+      "ground_truth": "A fellowship for single girl child pursuing research or PhD",
+      "answer": "The Savitribai Jyotirao Phule Fellowship for Single Girl Child (SJSGC) is a Fellowship Scheme by the University Grants Commission (UGC), Department of Higher Education, for pursuing research work leading to the award of a Ph.D. degree. The target group of this scheme are the ‘single girl child’, i.e. the only girl child in the family without having any brother or sister. The scheme aims to support the higher education of single girl children in Social Sciences and promote single girls in society.",
+      "back_translation": "",
+      "answer_relevance": 0.875,
+      "source_accuracy": true,
+      "confidence": 0.8207,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Savitribai Jyotirao Phule Fellowship For Single Girl Child",
+        "Swami Vivekananda Single Girl Child Fellowship for Research in Social Sciences",
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)"
+      ],
+      "language_ok": true,
+      "latency_s": 24.98,
+      "status": "PASS",
+      "sources_returned": [
+        "Savitribai Jyotirao Phule Fellowship For Single Gi",
+        "Swami Vivekananda Single Girl Child Fellowship for",
+        "Post Graduate Indira Gandhi Scholarship For Single"
+      ]
+    },
+    {
+      "id": "EN-19",
+      "language": "en",
+      "category": "welfare",
+      "question": "Who is eligible for the SMILE scholarship for transgender persons?",
+      "ground_truth": "Transgender students studying in Secondary school class IX X and Senior Secondary class XI XII",
+      "answer": "Eligible candidates for the SMILE scholarship are Transgender persons. The scheme aims to provide financial assistance to Transgender students studying in secondary school (IX & X) & senior secondary school (XI & XII) to support their educational aspirations. All eligible candidates identifying as Transgender Persons will be considered for the scholarship.",
+      "back_translation": "",
+      "answer_relevance": 0.875,
+      "source_accuracy": true,
+      "confidence": 0.7067,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "SMILE - Comprehensive Rehabilitation For Welfare Of Transgender Persons",
+        "Swami Vivekananda Single Girl Child Fellowship for Research in Social Sciences"
+      ],
+      "language_ok": true,
+      "latency_s": 15.19,
+      "status": "PASS",
+      "sources_returned": [
+        "SMILE - Comprehensive Rehabilitation For Welfare O",
+        "Swami Vivekananda Single Girl Child Fellowship for"
+      ]
+    },
+    {
+      "id": "EN-20",
+      "language": "en",
+      "category": "citizen_service",
+      "question": "What documents are needed to apply at the South Goa Collectorate for a residence certificate?",
+      "ground_truth": "Application form submitted to the Collectorate South Goa",
+      "answer": "To apply for a residence certificate at the South Goa Collectorate, the required documents are:\n\n* Birth Certificate\n* Residence Certificate (preceding 5 years)\n* Educational qualification Certificate\n* Identity proof (e.g. Voter's card, PAN card, Driving License, Passport copy, Aadhaar card, etc.)\n* Affidavit on Rs. 100/- stamp paper\n* Self-Declaration from Applicant\n\nScheme: Domicile Certificate.",
+      "back_translation": "",
+      "answer_relevance": 0.5,
+      "source_accuracy": true,
+      "confidence": 0.7642,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 22.75,
+      "status": "PASS",
+      "sources_returned": [
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "EN-21",
+      "language": "en",
+      "category": "out_of_corpus",
+      "question": "What is the government subsidy scheme for space travel to Mars?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "No reliable information found for your query. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.3141,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 4.76,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "EN-22",
+      "language": "en",
+      "category": "out_of_corpus",
+      "question": "What subsidy scheme exists for purchasing Tesla cars in Goa?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "No reliable information found for your query. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.443,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 4.36,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "EN-23",
+      "language": "en",
+      "category": "out_of_corpus",
+      "question": "How much government allowance do students get for cryptocurrency trading?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "No reliable information found for your query. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.4627,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 5.62,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "EN-24",
+      "language": "en",
+      "category": "out_of_corpus",
+      "question": "What is the government research grant scheme for contacting extraterrestrial life?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "No reliable information found for your query. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.4729,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 4.18,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "EN-25",
+      "language": "en",
+      "category": "out_of_corpus",
+      "question": "How much scholarship do high school students get for Antarctica research expeditions?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "No reliable information found for your query. Please verify with the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "back_translation": "",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.4786,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 4.63,
+      "status": "PASS",
+      "sources_returned": []
+    }
+  ]
+}

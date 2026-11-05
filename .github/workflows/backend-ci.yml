@@ -5,11 +5,13 @@ on:
     branches: [develop, main]
     paths:
       - "backend/**"
+      - "frontend/**"
       - ".github/workflows/backend-ci.yml"
   pull_request:
     branches: [develop, main]
     paths:
       - "backend/**"
+      - "frontend/**"
 
 jobs:
   test:
@@ -34,7 +36,8 @@ jobs:
             pydantic-settings \
             pytest \
             pytest-asyncio \
-            sentencepiece
+            sentencepiece \
+            structlog
         working-directory: backend
 
       - name: Run tests
@@ -42,8 +45,31 @@ jobs:
           pytest tests/test_ingestion.py \
                  tests/test_pipeline.py \
                  tests/test_fallback_routing.py \
+                 tests/test_api_security.py \
+                 tests/test_translation_hints.py \
                  -v --tb=short
         working-directory: backend
         env:
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build

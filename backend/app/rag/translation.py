@@ -136,6 +136,18 @@ class _IndicTrans2Backend:
             out = self._mdl_e2i.generate(**inputs, max_length=256, num_beams=4)
         return self._tok_e2i.decode(out[0], skip_special_tokens=True).strip()
 
+    def konkani_to_english_pivot(self, text: str) -> str:
+        """Alternate retrieval translation using Hindi (hin_Deva) pivot."""
+        import torch
+
+        formatted = f"hin_Deva eng_Latn {text}"
+        inputs = self._tok_i2e(
+            formatted, return_tensors="pt", padding=True, truncation=True, max_length=256
+        ).to(self._dev)
+        with torch.no_grad():
+            out = self._mdl_i2e.generate(**inputs, max_length=256, num_beams=4)
+        return self._tok_i2e.decode(out[0], skip_special_tokens=True).strip()
+
 
 # ── NLLB-200 backend ─────────────────────────────────────────────────────
 
@@ -185,6 +197,10 @@ class _NLLBBackend:
     def english_to_konkani(self, text: str) -> str:
         # Generate Marathi Devanagari as a proxy for Konkani
         return self._translate(text, src_lang=_NLLB_ENGLISH, tgt_lang=_NLLB_KONKANI_PROXY)
+
+    def konkani_to_english_pivot(self, text: str) -> str:
+        """Alternate retrieval translation using Hindi pivot."""
+        return self._translate(text, src_lang="hin_Deva", tgt_lang=_NLLB_ENGLISH)
 
 
 # ── Public TranslationService ────────────────────────────────────────────
@@ -268,6 +284,18 @@ class TranslationService:
         except Exception as exc:
             logger.warning("English→Konkani translation failed: %s", exc)
             return text
+
+    def konkani_to_english_pivot(self, text: str) -> str:
+        """Translate Konkani Devanagari query to English using a Hindi pivot."""
+        if not text or not self._load():
+            return text
+        try:
+            if hasattr(self._backend, "konkani_to_english_pivot"):
+                return self._backend.konkani_to_english_pivot(text)  # type: ignore[union-attr]
+            return self.konkani_to_english(text)
+        except Exception as exc:
+            logger.warning("Hindi pivot translation failed: %s", exc)
+            return self.konkani_to_english(text)
 
     @property
     def backend_name(self) -> str:

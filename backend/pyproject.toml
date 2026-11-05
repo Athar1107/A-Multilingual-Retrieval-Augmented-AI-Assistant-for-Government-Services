@@ -8,11 +8,10 @@ packages = ["app"]
 [tool.hatch.build.targets.sdist]
 include = ["app"]
 
-
 [project]
-name = "government-ai-assistant-backend"
+name = "seva-ai-backend"
 version = "0.1.0"
-description = "Backend for the Government AI Assistant — multilingual RAG system"
+description = "Backend for Seva AI — multilingual RAG system for Indian government services"
 requires-python = ">=3.11"
 
 dependencies = [
@@ -25,41 +24,26 @@ dependencies = [
     "pydantic==2.7.4",
     "pydantic-settings==2.3.4",
 
-    # Database
-    "sqlalchemy==2.0.31",
-    "alembic==1.13.2",
-    "aiosqlite==0.20.0",       # SQLite async driver (dev)
-    "asyncpg==0.29.0",         # PostgreSQL async driver (prod)
-
     # Vector Store
     "chromadb==0.5.3",
 
-    # LLM & RAG
-    "langchain==0.2.11",
-    "langchain-community==0.2.10",
-    "langchain-chroma==0.1.2",
-    "ollama==0.3.0",
-
-    # Embeddings
+    # Embeddings & Translation
     "sentence-transformers==3.0.1",
     "torch>=2.3.1",
+    "transformers==4.43.3",
+    "sentencepiece==0.2.0",
 
     # Document Processing
+    "pymupdf==1.24.9",
     "beautifulsoup4==4.12.3",
     "lxml==5.2.2",
 
-    # Text & Language
-    "langdetect==1.0.9",
+    # Text Retrieval & Search
     "rank-bm25==0.2.2",
     "tiktoken==0.7.0",
 
-    # Logging
+    # Structured Logging
     "structlog==24.2.0",
-
-    # Security & Rate Limiting
-    "slowapi==0.1.9",
-    "python-jose[cryptography]==3.3.0",
-    "passlib[bcrypt]==1.7.4",
 
     # Utilities
     "python-multipart==0.0.9",
@@ -77,21 +61,10 @@ dev = [
     "httpx==0.27.0",
     "anyio==4.4.0",
 
-    # RAG Evaluation
-    "ragas==0.1.14",
-
-    # Load Testing
-    "locust==2.29.1",
-
     # Code Quality
     "ruff==0.5.4",
     "black==24.4.2",
     "mypy==1.11.0",
-    "pre-commit==3.7.1",
-
-    # Type Stubs
-    "types-beautifulsoup4==4.12.0.20240511",
-    "types-passlib==1.7.7.20240327",
 ]
 
 [tool.black]
@@ -111,7 +84,7 @@ ignore = ["ANN101", "ANN102"]
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
-exclude = ["tests/", "scripts/", "alembic/"]
+exclude = ["tests/", "scripts/"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -124,7 +97,7 @@ markers = [
 
 [tool.coverage.run]
 source = ["app"]
-omit = ["app/migrations/*", "tests/*"]
+omit = ["tests/*"]
 
 [tool.coverage.report]
 exclude_lines = [

@@ -1,8 +1,8 @@
 @echo off
-title Government AI Assistant - API Server
+title Seva AI - API Server
 
 echo ============================================================
-echo   Government AI Assistant - API Server
+echo   Seva AI - Multilingual Government Services Assistant
 echo ============================================================
 echo.
 
@@ -17,15 +17,14 @@ timeout /t 2 /nobreak >nul
 set PYTHON="%~dp0.venv\Scripts\python.exe"
 set BACKEND=%~dp0backend
 
-:: Set all required environment variables
-:: ⚠️  Set HF_TOKEN in backend/.env — do not hardcode your real token here
-set HF_TOKEN=YOUR_HF_TOKEN_HERE
-set TRANSLATION_MODEL=indictrans2
+:: Set environment variables
+set TRANSLATION_MODEL=auto
 set PYTHONIOENCODING=utf-8
-set HF_HUB_OFFLINE=0
-set TRANSFORMERS_OFFLINE=0
+set HF_HUB_OFFLINE=1
+set TRANSFORMERS_OFFLINE=1
 set OLLAMA_URL=http://localhost:11434
 set OLLAMA_MODEL=llama3.2
+set API_KEY=dev-secret-key-123
 
 echo Python   : %PYTHON%
 echo Backend  : %BACKEND%

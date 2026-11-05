@@ -1,6 +1,6 @@
-# Government AI Assistant
+# Seva AI — Multilingual Government Services Assistant
 
-> An enterprise-grade multilingual RAG-powered AI assistant for Indian Government Services — supporting English and Goan Konkani (Devanagari).
+> A source-grounded multilingual Retrieval-Augmented Generation (RAG) assistant for Indian and Goan Government Services — supporting English and Goan Konkani (Devanagari).
 
 ---
 
@@ -9,14 +9,14 @@
 Citizens can ask questions about government schemes in **English or Goan Konkani** and get grounded, cited answers from official sources.
 
 **Knowledge base covers:**
-- Central Government Schemes (PM Scholarship, NMMSS, Overseas Scholarships, etc.)
-- Gujarat / Goa State Schemes
-- Internship Schemes (DPIIT, NITI, DRDO, AICTE-MITACS)
-- Education, Welfare, and Financial Assistance Schemes
+- Central Government Schemes (PM Scholarship, NMMSS, National Overseas Scholarships, etc.)
+- Goa State Government Schemes & Citizen Charters (STSE Goa, Directorate of Official Language, South Goa Collectorate, etc.)
+- Internship Schemes (DPIIT, AICTE-Mitacs, etc.)
+- Education, Welfare, Fellowship, and Financial Assistance Schemes
 
 **Example queries:**
-- `"What is the benefit amount of PM scholarship scheme?"` → ₹2,500/month (boys), ₹3,000/month (girls)
-- `"  "` → Konkani answer with sources
+- `"What is the monthly scholarship amount for boys under the Prime Minister Scholarship Scheme?"` → ₹2,500/month (boys), ₹3,000/month (girls)
+- `"पीएम शिष्यवृत्ती योजनेंत मुलांक दरमहिन्याला किती रुपये मेळतात?"` → Konkani grounded answer with official sources and confidence routing
 
 ---
 
@@ -24,30 +24,34 @@ Citizens can ask questions about government schemes in **English or Goan Konkani
 
 | Layer | Technology |
 |---|---|
-| Backend API | Python + FastAPI + Uvicorn |
-| LLM | Llama 3.2 via Ollama (local, CPU) |
-| Embeddings | `all-MiniLM-L6-v2` (ChromaDB) |
-| Vector Store | ChromaDB (203 chunks, 58 schemes) |
-| Hybrid Search | Dense + BM25 + RRF fusion |
-| Translation | IndicTrans2 200M (Goan Konkani ↔ English) |
-| Fallback Translation | NLLB-200 600M (ungated, Marathi proxy) |
-| Data Source | myScheme.gov.in public API |
+| Frontend UI | React 18 + Vite SPA (`frontend/`) |
+| Backend API | Python 3.11+ + FastAPI + Uvicorn + Structlog |
+| LLM | Llama 3.2 via Ollama (local inference) |
+| Embeddings | `all-MiniLM-L6-v2` (384-dim, cosine space) |
+| Vector Store | ChromaDB `PersistentClient` (318 chunks, 68 documents) |
+| Hybrid Search | Dense ChromaDB + Sparse BM25 + Reciprocal Rank Fusion (RRF, $k=60$) |
+| Translation | IndicTrans2 200M distilled (`gom_Deva` ↔ `eng_Latn`, with Hindi pivot fallback) |
+| Fallback Translation | NLLB-200 600M (ungated, `mar_Deva` script proxy) |
+| Security | API-key authentication (`X-API-Key`), Sliding Window rate limiting |
+| Deployment | Docker Compose (Nginx reverse proxy + Backend + Ollama) |
 
 ---
 
 ## Current Status
 
-| Component | Status |
-|---|---|
-| 58 schemes ingested from myScheme API | ✅ |
-| ChromaDB indexed (203 chunks) | ✅ |
-| Hybrid retrieval (dense + BM25 + RRF) | ✅ |
-| LLM generation (llama3.2) | ✅ |
-| Goan Konkani ↔ English translation | ✅ |
-| REST API (`/query`, `/health`, `/translate/status`) | ✅ |
-| CI passing (10 tests) | ✅ |
-| Frontend chat UI | 🔜 Planned |
-| Docker deployment | 🔜 Planned |
+| Component | Status | Reality / Details |
+|---|---|---|
+| Corpus Ingestion | ✅ | **68 documents** (58 from myScheme.gov.in API + 10 official Goa government portal PDFs) |
+| Vector Index | ✅ | **318 chunks** indexed in ChromaDB (`PersistentClient`) with dense embeddings & BM25 sparse index |
+| Hybrid Retrieval | ✅ | Dense + BM25 fused via Reciprocal Rank Fusion ($k=60$) |
+| LLM Generation | ✅ | `llama3.2` via Ollama local inference |
+| Translation Layer | ✅ | IndicTrans2 200M distilled (native Goan Konkani `gom_Deva` ↔ English `eng_Latn`) with NLLB-200 fallback |
+| Fallback Routing | ✅ | 3-state routing (`direct` \| `fallback_recovered` \| `fallback_failed`) with refusal detection & translation back |
+| REST API | ✅ | FastAPI with `/query`, `/health`, `/translate/status`, `/admin/stats` |
+| Security | ✅ | `X-API-Key` authentication on `/query` and `/admin/stats`, structlog sanitized JSON logging |
+| Frontend Chat UI | ✅ | Present — React 18 + Vite SPA with real-time route badges & source citations |
+| Containerization | ✅ | Present — Multi-stage Dockerfile and Docker Compose with pinned images and Nginx reverse proxy |
+| Automated Tests | ✅ | 23 unit and integration tests passing (`backend/tests/`) |
 
 ---
 
@@ -55,149 +59,117 @@ Citizens can ask questions about government schemes in **English or Goan Konkani
 
 ### Prerequisites
 - Python 3.11+
-- [Ollama](https://ollama.com) running with `llama3.2` pulled
-- HuggingFace account with access to IndicTrans2 models (optional — falls back to NLLB)
+- Node.js 18+ (for frontend)
+- [Ollama](https://ollama.com) running with `llama3.2` model pulled (`ollama pull llama3.2`)
+- Hugging Face token for IndicTrans2 (cached locally or set via `HF_TOKEN`)
 
-### 1. Clone and set up
-
-```bash
-git clone https://github.com/Athar1107/A-Multilingual-Retrieval-Augmented-AI-Assistant-for-Government-Services.git
-cd "A-Multilingual-Retrieval-Augmented-AI-Assistant-for-Government-Services"
-
-# Create virtual environment
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # Linux/Mac
-
-# Install dependencies
-pip install httpx fastapi pydantic pydantic-settings uvicorn
-pip install chromadb sentence-transformers rank-bm25 sentencepiece
-```
-
-### 2. Configure environment
+### 1. Configure environment
 
 ```bash
+# In backend/
 cp backend/.env.example backend/.env
-# Edit backend/.env and set:
-# HF_TOKEN=your_huggingface_token  (for native Konkani translation)
-# OLLAMA_MODEL=llama3.2
+# Set API_KEY and optional HF_TOKEN in backend/.env
+
+# In frontend/
+cp frontend/.env.example frontend/.env
+# Sets VITE_API_KEY matching backend API_KEY
 ```
 
-### 3. Ingest the corpus
+### 2. Run backend
 
 ```bash
-cd backend
-python scripts/run_ingestion.py    # Downloads 58 schemes from myScheme API
-python -m app.rag.indexing         # Builds ChromaDB vector index
+# Activate virtual environment
+.\.venv\Scripts\activate   # Windows
+# source .venv/bin/activate  # Linux/macOS
+
+# Run with uvicorn (pre-warms models during lifespan startup)
+uvicorn app.main:app --app-dir backend --port 8000
 ```
 
-### 4. Start the server
+### 3. Run frontend
 
-**Windows:** Double-click `start_server.bat`
-
-**Linux/Mac:**
 ```bash
-cd backend
-HF_TOKEN=your_token OLLAMA_MODEL=llama3.2 uvicorn app.main:app --port 8000
+cd frontend
+npm ci
+npm run dev
 ```
 
-### 5. Test it
+Open **http://localhost:5173** to chat with the assistant.
 
-Open **http://127.0.0.1:8000/docs** in your browser.
+### 4. Or run via Docker Compose
 
-Or use curl:
 ```bash
-curl -X POST http://127.0.0.1:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"text": "What is the PM scholarship benefit?", "language": "en"}'
+docker compose up --build
 ```
+Access the application at **http://localhost**.
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Liveness check |
-| `GET` | `/translate/status` | Active translation backend |
-| `POST` | `/query` | Ask a question (English or Konkani) |
-| `GET` | `/docs` | Swagger UI |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/health` | Open | Health check and process liveness |
+| `GET` | `/translate/status` | Open | Active translation backend status |
+| `POST` | `/query` | `X-API-Key` | Ask a question in English or Konkani (auto-detects script) |
+| `GET` | `/admin/stats` | `X-API-Key` | System uptime, query count, route telemetry, and corpus breakdown |
 
-### Request format
+### Request format (`POST /query`)
 
 ```json
 {
-  "text": "Your question here",
+  "text": "What is the monthly scholarship amount for boys under the Prime Minister Scholarship Scheme?",
   "language": "en"
 }
 ```
-
-`language`: `"en"` for English, `"kok"` for Goan Konkani
+*Note: `language` is optional; if omitted, the backend auto-detects Devanagari script for Konkani.*
 
 ### Response format
 
 ```json
 {
-  "query": "What is the PM scholarship benefit?",
-  "answer": "The PM scholarship provides ₹2,500/month for boys...",
-  "confidence": 0.971,
+  "query": "What is the monthly scholarship amount for boys under the Prime Minister Scholarship Scheme?",
+  "answer": "The monthly scholarship amount for boys under the Prime Minister Scholarship Scheme is ₹2,500 per month.",
+  "confidence": 0.6729,
   "route": "direct",
   "sources": [
     {
       "title": "Prime Minister's Scholarship Scheme",
       "source_url": "https://www.myscheme.gov.in/schemes/pmss"
     }
-  ]
+  ],
+  "translator_backend": "indictrans2",
+  "retrieval_hint_applied": false,
+  "retrieved_doc_ids": ["pmss"]
 }
 ```
 
 ---
 
-## Translation
+## Running Evaluation
 
-The system supports **two translation backends**:
+Run the audited v2.0 evaluation suite:
 
-| Backend | Konkani Support | Setup Required |
-|---|---|---|
-| IndicTrans2 200M (ai4bharat) | Native `gom_Deva` (Goan Konkani) | HF_TOKEN + model access |
-| NLLB-200 600M (Facebook) | `mar_Deva` proxy (Marathi/Devanagari) | None — downloads automatically |
+```bash
+# Evaluate English dataset (25 queries: 20 in-corpus, 5 out-of-corpus)
+python backend/eval/run_evaluation.py --dataset en
 
-Check active backend: `GET /translate/status`
+# Evaluate Konkani dataset (20 queries: 15 in-corpus, 5 out-of-corpus)
+python backend/eval/run_evaluation.py --dataset kok
 
----
+# Run both and generate manual grading export
+python backend/eval/run_evaluation.py --dataset both
+```
 
-## Project Documentation
-
-All planning and architecture docs are in `docs/`:
-
-| File | Contents |
-|---|---|
-| [AGENT.md](docs/AGENT.md) | Rules for all contributors |
-| [PROJECT.md](docs/PROJECT.md) | Vision, goals, requirements |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design with diagrams |
-| [RAG_PIPELINE.md](docs/RAG_PIPELINE.md) | Detailed RAG pipeline spec |
-| [RESEARCH_PLAN.md](docs/RESEARCH_PLAN.md) | Research scope and methodology |
-| [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) | Current implementation audit |
+Exports:
+- `backend/eval/results_<dataset>_<timestamp>.json`: structured metrics with `"scorer_version": "v2.0_audited"`
+- `backend/eval/manual_grading.csv`: human verification sheet for native Konkani speakers.
 
 ---
 
 ## Running Tests
 
 ```bash
-cd backend
-pytest tests/test_ingestion.py tests/test_pipeline.py tests/test_fallback_routing.py -v
+pytest
 ```
-
-10 tests — all passing.
-
----
-
-### Frontend development
-
-The chatbot UI is a React + Vite application in the frontend folder. Run
-npm ci and then npm run dev from that folder. Vite proxies API calls to
-http://127.0.0.1:8000 during local development. For containers, docker compose
-up --build builds the Vite application into the Nginx image and serves it at
-http://localhost.
-
-*Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.*
+23 tests covering ingestion, indexing, pipeline orchestration, 3-way fallback routing, API authentication, and translation hints.

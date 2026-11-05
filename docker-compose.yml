@@ -1,4 +1,4 @@
-# Government AI Assistant — Docker Compose
+# Seva AI — Docker Compose
 # Run from the project root:
 #   docker compose up
 #
@@ -10,13 +10,12 @@
 #   docker compose exec backend python scripts/ingest_pdf_sources.py
 
 networks:
-  internal:       # backend ↔ chromadb ↔ ollama (not exposed to browser)
+  internal:       # backend ↔ ollama (not exposed to browser)
     driver: bridge
   proxy:          # nginx ↔ backend ↔ frontend (browser-facing)
     driver: bridge
 
 volumes:
-  chroma_data:    # ChromaDB vector index persistence
   ollama_data:    # Ollama model weights persistence
 
 services:
@@ -42,7 +41,7 @@ services:
       dockerfile: Dockerfile
     container_name: gov-backend
     env_file:
-      - ./backend/.env.example      # copy to backend/.env and fill in values
+      - ./backend/.env
     environment:
       - APP_ENV=production
       - ALLOWED_ORIGINS=
@@ -52,11 +51,10 @@ services:
       - PROCESSED_CORPUS_PATH=/app/data/processed/active_english.json
       - HF_HUB_OFFLINE=0
       - TRANSLATION_MODEL=auto
+      - USE_RETRIEVAL_HINTS=false
     volumes:
       - ./data:/app/data            # corpus, indexes, and processed files
     depends_on:
-      chromadb:
-        condition: service_healthy
       ollama:
         condition: service_started
     networks:
@@ -70,29 +68,9 @@ services:
       retries: 3
       start_period: 90s
 
-  # ── ChromaDB (Vector Store) ────────────────────────────────────────────────
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: gov-chromadb
-    environment:
-      - IS_PERSISTENT=TRUE
-      - PERSIST_DIRECTORY=/chroma/data
-      - ANONYMIZED_TELEMETRY=FALSE
-    volumes:
-      - chroma_data:/chroma/data
-    networks:
-      - internal
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/heartbeat"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
   # ── Ollama (LLM) ──────────────────────────────────────────────────────────
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.3.14
     container_name: gov-ollama
     volumes:
       - ollama_data:/root/.ollama

@@ -261,26 +261,34 @@ function Message({ message }) {
         {!isUser && !isTyping && !isError && typeof message.confidence === "number" && (
           <footer className="message-footer">
             <div className="message-meta">
-              <span className={`grounding-badge ${message.route === "fallback" ? "caution" : "verified"}`}>
-                {message.route === "fallback" ? (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                      <line x1="12" y1="9" x2="12" y2="13" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    Verify with official portal
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      <path d="m9 12 2 2 4-4" />
-                    </svg>
-                    {Math.round(message.confidence * 100)}% Source Grounded
-                  </>
-                )}
-              </span>
+              {message.route === "fallback_recovered" ? (
+                <span className="grounding-badge recovered">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                    <path d="M16 21h5v-5" />
+                  </svg>
+                  {Math.round(message.confidence * 100)}% Fallback Recovered
+                </span>
+              ) : message.route === "fallback_failed" || message.route === "fallback" ? (
+                <span className="grounding-badge caution">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  Verify with official portal (Unverified)
+                </span>
+              ) : (
+                <span className="grounding-badge verified">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  {Math.round(message.confidence * 100)}% Source Grounded
+                </span>
+              )}
             </div>
 
             {safeSources.length > 0 && (
@@ -460,9 +468,17 @@ export default function App() {
     setIsLoading(true);
 
     try {
+      const apiKey = import.meta.env.VITE_API_KEY || "";
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      };
+      if (apiKey) {
+        headers["X-API-Key"] = apiKey;
+      }
       const response = await fetch("/query", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers,
         credentials: "same-origin",
         body: JSON.stringify({ text, language }),
       });

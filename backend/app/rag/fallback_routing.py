@@ -1,56 +1,67 @@
-"""Confidence-based routing to direct answers or fallback responses."""
+"""Confidence-based routing for direct answers, fallback recovery, and fallback failure."""
+
+from __future__ import annotations
 
 import logging
+from typing import Any
 
 from app.config import CONFIDENCE_THRESHOLD
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 FALLBACK_CAVEAT = (
-    "I found some related information but I'm not confident enough to give "
-    "a definitive answer. Please verify with the official scheme portal at "
-    "https://www.myscheme.gov.in or contact the relevant government office."
+    "No reliable information found for your query. Please verify with the official "
+    "scheme portal at https://www.myscheme.gov.in or contact the relevant government office."
 )
 
 
 class FallbackRouter:
     """Route answers based on retrieval confidence scores.
 
-    When the fused retrieval score is below the threshold, the answer
-    is still returned but a caveat is appended directing the user to
-    official sources.
+    Route values:
+      - ``direct``             : initial retrieval confidence meets or exceeds threshold.
+      - ``fallback_recovered`` : initial retrieval fell below threshold, but alternate retrieval
+                                 (query reformulation or Hindi pivot) recovered high confidence.
+      - ``fallback_failed``    : retrieval confidence remained below threshold after all attempts;
+                                 returns standard refusal caveat directing to myscheme.gov.in.
     """
 
     def __init__(self, confidence_threshold: float = CONFIDENCE_THRESHOLD) -> None:
         self.confidence_threshold = confidence_threshold
 
-    def route(self, query: str, retrieval_score: float, answer: str) -> dict[str, Any]:
-        """Decide whether to serve the generated answer directly or add a caveat.
+    def route(
+        self,
+        query: str,
+        retrieval_score: float,
+        answer: str,
+        is_recovered: bool = False,
+    ) -> dict[str, Any]:
+        """Decide routing state based on retrieval confidence.
 
         Parameters
         ----------
         query:
-            The original user query (used for logging).
+            The query text (used for logging, truncated to 80 chars).
         retrieval_score:
-            A score in [0, 1] representing retrieval confidence
-            (e.g. the average RRF score normalised).
+            Score in [0.0, 1.0] representing retrieval confidence.
         answer:
             The generated answer text.
+        is_recovered:
+            True if this routing decision succeeds an alternate retrieval attempt.
 
         Returns
         -------
-        dict with ``route`` ('direct' | 'fallback'), ``answer``, and
-        ``confidence``.
+        dict with ``route`` ('direct' | 'fallback_recovered' | 'fallback_failed'),
+        ``answer``, and ``confidence``.
         """
-        confidence = min(max(retrieval_score, 0.0), 1.0)
+        confidence = min(max(float(retrieval_score), 0.0), 1.0)
 
         if confidence >= self.confidence_threshold:
-            route = "direct"
+            route = "fallback_recovered" if is_recovered else "direct"
             final_answer = answer
         else:
-            route = "fallback"
-            final_answer = f"{answer}\n\n⚠️ {FALLBACK_CAVEAT}"
+            route = "fallback_failed"
+            final_answer = FALLBACK_CAVEAT
             logger.info(
                 "Low confidence (%.4f < %.2f) for query: %s",
                 confidence,

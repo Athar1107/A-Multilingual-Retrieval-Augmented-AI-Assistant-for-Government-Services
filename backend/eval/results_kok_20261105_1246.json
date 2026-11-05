@@ -1,0 +1,567 @@
+{
+  "scorer_version": "v2.0_audited",
+  "summary": {
+    "scorer_version": "v2.0_audited",
+    "total": 20,
+    "passed": 15,
+    "errors": 0,
+    "pass_rate": 0.75,
+    "avg_answer_relevance": 0.668,
+    "source_accuracy": 1.0,
+    "avg_confidence": 0.603,
+    "language_accuracy": 1.0,
+    "avg_latency_s": 53.6,
+    "routes": {
+      "direct": 15,
+      "fallback_recovered": 1,
+      "fallback_failed": 4
+    }
+  },
+  "results": [
+    {
+      "id": "KOK-01",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "पीएम शिष्यवृत्ती योजनेंत मुलांक दरमहिन्याला किती रुपये मेळतात?",
+      "ground_truth": "Rs. 2500 per month for boys",
+      "answer": "प्रदान केलेल्या संदर्भात पंतप्रधान शिष्यवृत्ती योजनेचा उल्लेख नाही. संदर्भात केवळ सिंगल गर्ल चाइल्डसाठी पदव्युत्तर इंदिरा गांधी शिष्यवृत्तीचा उल्लेख आहे, जी पीजी कोर्सच्या पूर्ण कालावधीसाठी दरवर्षी ₹ 36,200/- शिष्यवृत्ती प्रदान करते. पीएम शिष्यवृत्ती योजनेबद्दल किंवा त्याच्या मासिक देयकाबद्दल कोणतीही माहिती नाही.",
+      "back_translation": "The context does not mention the PM Scholarship Scheme. The context only refers to the Postgraduate Indira Gandhi Scholarship for Single Girl Child, which provides ₹ 36,200/- scholarship per annum for the full duration of the PG course.",
+      "answer_relevance": 0.0,
+      "source_accuracy": true,
+      "confidence": 0.6224,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "National Means-cum-Merit Scholarship Scheme",
+        "Prime Minister's Scholarship Scheme",
+        "Pre-Matric Scholarship Scheme for the Children of Parents/Guardians Engaged in Unclean and Hazardous Occupations - Goa"
+      ],
+      "language_ok": true,
+      "latency_s": 76.59,
+      "status": "FAIL",
+      "sources_returned": [
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "National Means-cum-Merit Scholarship Scheme",
+        "Prime Minister's Scholarship Scheme"
+      ]
+    },
+    {
+      "id": "KOK-02",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "पीएम शिष्यवृत्ती योजनेंत मुलींक दरमहिन्याला किती रुपये मेळतात?",
+      "ground_truth": "Rs. 3000 per month for girls",
+      "answer": "पंतप्रधानांच्या शिष्यवृत्ती योजनेत मुलींना किती पैसे मिळतात याबद्दल संदर्भात कोणतीही माहिती उपलब्ध नाही. तथापि, माजी सैनिक / माजी कोस्ट गार्डच्या अवलंबून वॉर्डसाठी उच्च तांत्रिक आणि व्यावसायिक शिक्षणास प्रोत्साहित करण्यासाठी ही योजना सुरू करण्यात आली होती आणि शिष्यवृत्तीची रक्कम केवळ दोन वर्षांच्या कालावधीसाठी दरवर्षी ₹ 36,200/- आहे (म्हणजे पीजी कोर्सची संपूर्ण कालावधी).",
+      "back_translation": "However, the scheme was launched to encourage higher technical and vocational education for ex-servicemen/ex-coast guards depending on the ward and the amount of the scholarship is ₹ 36,200/- per annum for a period of only two years (i.e. full duration of PG course).",
+      "answer_relevance": 0.0,
+      "source_accuracy": true,
+      "confidence": 0.6137,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Prime Minister's Scholarship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Pragati Scholarship Scheme For Girl Students (Technical Degree)"
+      ],
+      "language_ok": true,
+      "latency_s": 51.85,
+      "status": "FAIL",
+      "sources_returned": [
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Prime Minister's Scholarship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-03",
+      "language": "kok",
+      "category": "scholarship_goa",
+      "question": "STSE गोवा शिष्यवृत्ती रक्कम किती आसा?",
+      "ground_truth": "Rs. 2500 per student",
+      "answer": "विज्ञान प्रतिभा शोध परीक्षा (एसटीएसई) गोवा शिष्यवृत्तीमध्ये एकूण 200 शिष्यवृत्ती देण्यात आल्या असून प्रत्येक शिष्यवृत्तीची रक्कम 2500 रुपये आहे.",
+      "back_translation": "A total of 200 scholarships have been awarded in the Science Talent Search Examination (STSE) Goa Scholarship, amounting to Rs 2500 per scholarship.",
+      "answer_relevance": 0.6,
+      "source_accuracy": true,
+      "confidence": 0.6739,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "State Science Talent Search Examination (STSE) Goa 2025-26",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Sant Sohirobanath Ambiye Dnyanvruddhi Shishyavrutti- Bursary Scheme",
+        "SCERT Goa — Conducted Scholarship Schemes Details"
+      ],
+      "language_ok": true,
+      "latency_s": 26.45,
+      "status": "PASS",
+      "sources_returned": [
+        "State Science Talent Search Examination (STSE) Goa",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-04",
+      "language": "kok",
+      "category": "scholarship_goa",
+      "question": "गोव्यांत STSE खाला दर वर्षा किती शिष्यवृत्त्यो दितात?",
+      "ground_truth": "200 scholarships",
+      "answer": "गोवा राज्यातील आठव्या, नवव्या, दहाव्या, दहाव्या आणि बारावीच्या मेरिटरीज विद्यार्थ्यांना दरवर्षी विज्ञान प्रतिभा शोध परीक्षेत (STSE) केलेल्या कामगिरीवर आधारित एकूण 200 शिष्यवृत्ती देण्यात येतात. शिष्यवृत्ती 'विज्ञान प्रतिभा शोध परीक्षा (STSE) ' योजनेअंतर्गत देण्यात येतात. प्रत्येक शिष्यवृत्तीची रक्कम 2,500 रुपये आहे.",
+      "back_translation": "A total of 200 scholarships are awarded annually to merit students of 8th, 9th, 10th, 10th and 12th grades in the State of Goa based on their performance in the Science Talent Search Examination (STSE). The scholarships are awarded under the Science Talent Search Examination (STSE) scheme.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.7257,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "State Science Talent Search Examination (STSE) Goa 2025-26",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "SCERT Goa — Conducted Scholarship Schemes Details",
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child"
+      ],
+      "language_ok": true,
+      "latency_s": 51.52,
+      "status": "PASS",
+      "sources_returned": [
+        "State Science Talent Search Examination (STSE) Goa",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-05",
+      "language": "kok",
+      "category": "language_scheme",
+      "question": "भाषा पुरस्कार योजना म्हळ्यार काय?",
+      "ground_truth": "A scheme to award scholars writers dedicated to Konkani Marathi and Sanskrit languages",
+      "answer": "या संदर्भात भाषी पुरस्कार योजनेचा उल्लेख आहे, जी भाषाशास्त्रज्ञांच्या दर्जेदार कार्याचा शोध घेण्यासाठी डिझाइन केलेली योजना आहे. या योजनेचा उद्देश भाषेच्या हितासाठी, विशेषतः कोकणी, मराठी आणि संस्कृत भाषांसाठी आपले करिअर समर्पित केलेल्या व्यक्तींना मानदंड, प्रमाणपत्र आणि मेमंटो प्रदान करणे आहे. ही योजना तीन श्रेणींमध्ये भाषी पुरस्कार देतेः कोकणी, मराठी आणि संस्कृत भाषा.",
+      "back_translation": "The purpose of this scheme is to provide standards, certificates and mementos to individuals who have dedicated their careers to the benefit of the language, especially the Kokani, Marathi and Sanskrit languages. The scheme awards the Bhasha Awards in three categories: Kokani, Marathi and Sanskrit languages.",
+      "answer_relevance": 0.556,
+      "source_accuracy": true,
+      "confidence": 0.5278,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Lokbhasha Sangrah Yojana — Folk Language Collection Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 64.65,
+      "status": "PASS",
+      "sources_returned": [
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-06",
+      "language": "kok",
+      "category": "language_scheme",
+      "question": "भाषा पुरस्कार योजना कोणत्या वर्षा सुरू जाली?",
+      "ground_truth": "2013",
+      "answer": "प्रदान केलेल्या संदर्भात \"भाषा पुरस्कार योजना\" चा उल्लेख नाही. संदर्भात केवळ \"स्थानीय भाषांमध्ये शब्दांची संकलन आणि तयार करण्याची योजना\" याबद्दल चर्चा केली जाते आणि कोणत्याही पुरस्कार योजनेचा उल्लेख नाही.",
+      "back_translation": "There is no mention of \"Language Award Scheme\" in the context provided. Only \"Plans for Collecting and Producing Words in Local Languages\" is discussed in the context and no mention of any Award Scheme.",
+      "answer_relevance": 0.0,
+      "source_accuracy": true,
+      "confidence": 0.5103,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Lokbhasha Sangrah Yojana — Folk Language Collection Scheme",
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Bhasha Puraskar Yojana — Language Award Scheme (Konkani/Marathi/Sanskrit)",
+        "SCERT Goa — Conducted Scholarship Schemes Details"
+      ],
+      "language_ok": true,
+      "latency_s": 39.16,
+      "status": "FAIL",
+      "sources_returned": [
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio",
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Bhasha Puraskar Yojana — Language Award Scheme (Ko"
+      ]
+    },
+    {
+      "id": "KOK-07",
+      "language": "kok",
+      "category": "internship",
+      "question": "DPIIT इंटर्नशीप मधें दरमहिन्याला किती वेतन मेळता?",
+      "ground_truth": "Rs. 10000 per month",
+      "answer": "डीपीआयआयटी इंटर्नशिप योजना इंटर्नला दरमहा १०,००० रुपयांची शिष्यवृत्ती देते. ही शिष्यवृत्ती रक्कम इंटर्नशिप कालावधी पूर्ण झाल्यानंतर दिली जाते. इंटर्नशिप कालावधीत शिष्यवृत्ती रक्कम दिली जात नाही.",
+      "back_translation": "The DPIIT Internship Scheme grants an internship amount of Rs. 10,000 per month. This scholarship is awarded after the completion of the internship period.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.6593,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "DPIIT Internship Scheme",
+        "SMILE - Comprehensive Rehabilitation For Welfare Of Transgender Persons",
+        "Food Safety & Standards Authority Of India (FSSAI) Internship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 41.15,
+      "status": "PASS",
+      "sources_returned": [
+        "DPIIT Internship Scheme",
+        "SMILE - Comprehensive Rehabilitation For Welfare O",
+        "Food Safety & Standards Authority Of India (FSSAI)"
+      ]
+    },
+    {
+      "id": "KOK-08",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "राष्ट्रीय साधन-सह-गुण शिष्यवृत्ती योजना म्हळ्यार काय?",
+      "ground_truth": "Centrally sponsored scheme to award scholarships to meritorious students from economically weaker sections",
+      "answer": "प्रदान केलेल्या संदर्भात \"राष्ट्रीय संसाधन-सह-गुणवत्ता शिष्यवृत्ती योजनेचा\" उल्लेख नाही. संदर्भात केवळ राष्ट्रीय अर्थ-सह-गुणवत्ता शिष्यवृत्ती योजनेचा उल्लेख आहे.",
+      "back_translation": "The context provided does not refer to the \"National Resource-Co-Quality Scholarship Scheme\". The context only refers to the National Resource-Co-Quality Scholarship Scheme.",
+      "answer_relevance": 0.0,
+      "source_accuracy": true,
+      "confidence": 0.6155,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "National Means-cum-Merit Scholarship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "PM-YASASVI: Top Class College Education for OBC, EBC and DNT Students",
+        "Begum Hazrat Mahal National Scholarship Program",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)"
+      ],
+      "language_ok": true,
+      "latency_s": 34.65,
+      "status": "FAIL",
+      "sources_returned": [
+        "National Means-cum-Merit Scholarship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer",
+        "PM-YASASVI: Top Class College Education for OBC, E"
+      ]
+    },
+    {
+      "id": "KOK-09",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "अनुसूचित जाती विद्यार्थ्यांसाठी राष्ट्रीय परदेश शिष्यवृत्ती काय आसा?",
+      "ground_truth": "Scholarship for SC students to pursue higher education abroad",
+      "answer": "प्रदत्त संदर्भात \"अनुसूचित जातीच्या विद्यार्थ्यांसाठी राष्ट्रीय परदेशी शिष्यवृत्ती\" बद्दल कोणतीही माहिती नाही. संदर्भात केवळ अनुसूचित जमाती (एसटी) विद्यार्थ्यांसाठी राष्ट्रीय परदेशी शिष्यवृत्तीचा उल्लेख केला जातो, जो परदेशी संस्था / विद्यापीठांकडून उच्च शिक्षण घेण्यासाठी नियमित, पूर्णवेळ एसटी विद्यार्थ्यांसाठी शिष्यवृत्ती योजना आहे. ही योजना विशिष्टपणे अनुसूचित जातीच्या विद्यार्थ्यांसाठी नाही.",
+      "back_translation": "There is no information about \"National Foreign Scholarship for Scheduled Castes Students\" in the context given. The context refers only to National Foreign Scholarship for Scheduled Tribes (ST) students, which is a scholarship scheme for regular, full-time ST students to pursue higher education from foreign institutions/universities. This scheme is not specifically for SC students.",
+      "answer_relevance": 0.857,
+      "source_accuracy": true,
+      "confidence": 0.7463,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "National Overseas Scholarship For Scheduled Tribes (ST) Students",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "National Overseas Scholarship For Scheduled Caste Etc. Candidates",
+        "Education Loan Scheme (NSFDC)"
+      ],
+      "language_ok": true,
+      "latency_s": 69.93,
+      "status": "PASS",
+      "sources_returned": [
+        "National Overseas Scholarship For Scheduled Tribes",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "National Overseas Scholarship For Scheduled Caste "
+      ]
+    },
+    {
+      "id": "KOK-10",
+      "language": "kok",
+      "category": "citizen_service",
+      "question": "भाषा संचालनालय गोवा कोणत्यो सेवा दिता?",
+      "ground_truth": "Training workshops seminars and Devnagari Computer Typing for government employees",
+      "answer": "अधिकृत भाषा संचालनालय विविध सेवा प्रदान करते, ज्यात कार्यशाळा, सेमिनार आणि देवनागरी संगणक टाइपिंग प्रशिक्षण सरकारी / अर्धसरकारी कर्मचाऱ्यांना प्रदान करणे समाविष्ट आहे. संचालनालयाने कोकणी आणि मराठी भाषांचा प्रचार आणि विकास करण्याचे उद्दिष्ट देखील ठेवले आहे. याव्यतिरिक्त, संचालनालय कोकणीमध्ये शब्दावली तयार करणे यासह राज्यात प्रचलित भाषांच्या विकासासाठी विविध योजनांशी संबंधित आहे. तथापि, संदर्भ संचालनालयाने प्रदान केलेल्या अचूक सेवांबद्दल विशिष्ट माहिती देत नाही.",
+      "back_translation": "The Directorate of Official Languages provides a variety of services, including the provision of workshops, seminars and computer typing training to Government/Semi-Government employees. The Directorate has also set itself the objective of promoting and developing the Kokani and Marathi languages. In addition, the Directorate deals with various schemes for the development of the prevailing languages in the state, including the creation of vocabulary in Kokani. However, the Reference Directorate does not provide specific information about the exact services provided by the Directorate.",
+      "answer_relevance": 0.875,
+      "source_accuracy": true,
+      "confidence": 0.7343,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "Lokbhasha Sangrah Yojana — Folk Language Collection Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 94.06,
+      "status": "PASS",
+      "sources_returned": [
+        "Directorate of Official Language Goa — Citizen Cha",
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio"
+      ]
+    },
+    {
+      "id": "KOK-11",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "एकुलती एक चली भुरग्या खातीर पोस्ट ग्रॅज्युएट इंदिरा गांधी शिष्यवृत्ती खातीर कोण पात्र आसा?",
+      "ground_truth": "Girl students who are the only girl child in the family and admitted to first year of PG courses",
+      "answer": "पोस्ट ग्रॅज्युएट इंदिरा गांधी स्कॉलरशिप फॉर सिंगल गर्ल चाइल्ड ही विद्यार्थ्यांसाठी एक शिष्यवृत्ती योजना आहे जी कोणत्याही नामांकित विद्यापीठ किंवा पदव्युत्तर महाविद्यालयात पीजी अभ्यासक्रमांच्या पहिल्या वर्षामध्ये प्रवेश घेतात आणि त्यांच्या कुटुंबातील एकमेव मुलगी असतात. ही योजना केवळ पदव्युत्तर अभ्यासक्रमांमध्ये एकल मुलींच्या पदव्युत्तर शिक्षणास समर्थन देण्यासाठी विशेषतः डिझाइन केली गेली आहे. पात्रतेमध्ये कुटुंबातील एकल मुलगी असणे समाविष्ट आहे, विशिष्ट राज्ये सामान्य पात्रता निकषांपासून मुक्त आहेत. ही योजना खालील राज्यांमधील विद्यार्थ्यांसाठी उपलब्ध आहेः नगर हवेली आणि दमण आणि दीव (यूटी), लक्षद्वीप (यूटी), अरुणाचल प्रदेश, आसाम, मणिपूर, मेघालय, मिझोरम, नागालँड, सिक्किम आणि त्रिपुरा.",
+      "back_translation": "The Post Graduate Indira Gandhi Scholarship for Single Girl Child is a scholarship scheme for students who enter the first year of PG courses in any prestigious university or postgraduate college and are the only girl in their family. The scheme is specifically designed to support postgraduate education of single girls in postgraduate courses only. The eligibility includes being single girl in family, specific states are exempt from general eligibility. The scheme is available to students from the following states: Nagar Haveli and Daman and Diu (UT), Lakshadweep (UT), Arunachal Pradesh, Assam, Manipur, Meghalaya, Mizoram, Nagaland, and Tripura.",
+      "answer_relevance": 0.875,
+      "source_accuracy": true,
+      "confidence": 0.7463,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Pragati Scholarship Scheme For Girl Students (Technical Degree)",
+        "Post Graduate Scholarship Scheme for GATE/GPAT Qualified Students-AICTE ",
+        "Pragati Scholarship Scheme For Girl Students (Technical Diploma)",
+        "Post Graduate Scholarship for University Rank Holders Scheme"
+      ],
+      "language_ok": true,
+      "latency_s": 114.14,
+      "status": "PASS",
+      "sources_returned": [
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Pragati Scholarship Scheme For Girl Students (Tech",
+        "Post Graduate Scholarship Scheme for GATE/GPAT Qua"
+      ]
+    },
+    {
+      "id": "KOK-12",
+      "language": "kok",
+      "category": "scholarship",
+      "question": "पोस्ट ग्रॅज्युएट इंदिरा गांधी शिष्यवृत्ती खाला वर्सुकी फेलोशीप रक्कम किती आसा?",
+      "ground_truth": "Rs. 36200 per annum",
+      "answer": "पोस्ट ग्रॅज्युएट इंदिरा गांधी स्कॉलरशिप फॉर सिंगल गर्ल चाइल्ड ची किंमत दरवर्षी ₹ 36,200/- आहे, जी वार्षिक आधारावर डीबीटी मोडवर दिली जाते. शिष्यवृत्तीची रक्कम पीजी कोर्सच्या पूर्ण कालावधीसाठी आहे, जी दोन वर्षे आहे. हॉस्टल शुल्क, वैद्यकीय शुल्क इत्यादींसाठी ही रक्कम कोणत्याही अतिरिक्त अनुदानाच्या अधीन नाही.",
+      "back_translation": "The cost of the Post Graduate Indira Gandhi Scholarship for Single Girl Child is ₹36,200/- per annum, which is awarded on an annual basis in DBT mode. The amount of the scholarship is for the full duration of the PG course, which is two years. This amount is not subject to any additional subsidy for hostel fees, medical fees etc.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.6876,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Post Graduate Indira Gandhi Scholarship For Single Girl Child",
+        "Post Graduate Scholarship for University Rank Holders Scheme",
+        "Pragati Scholarship Scheme For Girl Students (Technical Diploma)",
+        "Rajiv Gandhi National Fellowship For Scheduled Caste Candidates",
+        "Pragati Scholarship Scheme For Girl Students (Technical Degree)"
+      ],
+      "language_ok": true,
+      "latency_s": 57.22,
+      "status": "PASS",
+      "sources_returned": [
+        "Post Graduate Indira Gandhi Scholarship For Single",
+        "Post Graduate Scholarship for University Rank Hold",
+        "Pragati Scholarship Scheme For Girl Students (Tech"
+      ]
+    },
+    {
+      "id": "KOK-13",
+      "language": "kok",
+      "category": "scholarship_goa",
+      "question": "गोव्यांत लॅपटॉप-ई योजना काय आसा?",
+      "ground_truth": "A scheme providing laptops to students in Goa",
+      "answer": "लॅपटॉप-ई योजना ही गोवा सरकारच्या शिक्षण संचालनालयाने सुरू केलेली सरकारी पुढाकार आहे, ज्याचा उद्देश डिजिटल शिक्षण, ज्ञान संपादन आणि रोजगार किंवा स्वयंरोजगारासाठी कौशल्य प्राप्ती वाढविण्यासाठी वैयक्तिक पोर्टेबल संगणक प्रणालीसह कक्षा XI विद्यार्थ्यांना सुसज्ज करणे आहे. ही योजना विद्यार्थ्यांना विशिष्ट तांत्रिक आवश्यकतांसह एक प्रवेश स्तरीय पोर्टेबल संगणक प्रणाली प्रदान करते. ही योजना ज्या संस्थेत विद्यार्थी शिकत आहे त्या संस्थेच्या प्रमुखाद्वारे स्वीकारली जाते.",
+      "back_translation": "The Laptop-E scheme is a government initiative launched by the Directorate of Education, Govt. of Goa, which aims to equip Class XI students with a personal portable computer system to enhance digital learning, knowledge acquisition and skill acquisition for employment or self-employment. The scheme provides students with an entry-level portable computer system with specific technical requirements.",
+      "answer_relevance": 0.6,
+      "source_accuracy": true,
+      "confidence": 0.7183,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Laptop-e Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)",
+        "Pre-Matric Scholarship Scheme for the Children of Parents/Guardians Engaged in Unclean and Hazardous Occupations - Goa",
+        "Sant Sohirobanath Ambiye Dnyanvruddhi Shishyavrutti- Bursary Scheme",
+        "Savitribai Jyotirao Phule Fellowship For Single Girl Child"
+      ],
+      "language_ok": true,
+      "latency_s": 54.65,
+      "status": "PASS",
+      "sources_returned": [
+        "Laptop-e Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer",
+        "Pre-Matric Scholarship Scheme for the Children of "
+      ]
+    },
+    {
+      "id": "KOK-14",
+      "language": "kok",
+      "category": "language_scheme",
+      "question": "लोकभाषा संग्रह योजना म्हळ्यार काय?",
+      "ground_truth": "A scheme for collection and preservation of folk language materials in Goa",
+      "answer": "संदर्भात लोकभाषा संकलन योजनेचा उल्लेख नाही. केवळ अधिकृत भाषेच्या संवर्धनाला आणि विकासाला चालना देण्यासाठी आणि शब्द किंवा शब्दांच्या संकलनासाठी समित्यांची स्थापना करण्याच्या प्रस्तावाचा उल्लेख आहे.",
+      "back_translation": "The context does not mention the Lok-Language Collection Scheme, only the proposal to set up committees to promote the preservation and development of official languages and to collect words or phrases.",
+      "answer_relevance": 0.0,
+      "source_accuracy": true,
+      "confidence": 0.5157,
+      "route": "fallback_recovered",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "Lokbhasha Sangrah Yojana — Folk Language Collection Scheme",
+        "Directorate of Official Language Goa — Citizen Charter 2025",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 40.54,
+      "status": "FAIL",
+      "sources_returned": [
+        "Lokbhasha Sangrah Yojana — Folk Language Collectio",
+        "Directorate of Official Language Goa — Citizen Cha",
+        "South Goa Collectorate — Citizen Charter 2026 (Cer"
+      ]
+    },
+    {
+      "id": "KOK-15",
+      "language": "kok",
+      "category": "internship",
+      "question": "DPIIT इंटर्नशीपची कमीत कमी आनी चडांत चड मुदत किती आसा?",
+      "ground_truth": "Minimum one month and maximum three months",
+      "answer": "डीपीआयआयटी इंटर्नशिपची किमान मुदत एक महिना आहे. इंटर्नशिपची मुदत किमान एक महिना आणि जास्तीत जास्त तीन महिने असेल. हे डीपीआयआयटी इंटर्नशिप योजनेअंतर्गत निर्दिष्ट केले आहे.",
+      "back_translation": "The minimum duration of the DPIIT internship is one month. The duration of the internship will be a minimum of one month and a maximum of three months.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.6865,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "DPIIT Internship Scheme",
+        "National Overseas Scholarship For Students With Disabilities",
+        "NITI Internship Scheme",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 31.52,
+      "status": "PASS",
+      "sources_returned": [
+        "DPIIT Internship Scheme",
+        "National Overseas Scholarship For Students With Di",
+        "NITI Internship Scheme"
+      ]
+    },
+    {
+      "id": "KOK-16",
+      "language": "kok",
+      "category": "out_of_corpus",
+      "question": "मंगळ ग्रहाचेर अंतराळ भोंवडे खातीर सरकारी अनुदान योजना काय आसा?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "आपल्या चौकशीसाठी कोणतीही विश्वासार्ह माहिती सापडली नाही. कृपया https://www.myscheme.gov.in या अधिकृत योजना पोर्टलवर तपासा किंवा संबंधित सरकारी कार्यालयाशी संपर्क साधा.",
+      "back_translation": "No reliable information has been found for your inquiries. Please check the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.3078,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 46.58,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "KOK-17",
+      "language": "kok",
+      "category": "out_of_corpus",
+      "question": "गोव्यांत टेस्ला गाडी खरेदी खातीर सबसिडी योजना काय आसा?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "आपल्या चौकशीसाठी कोणतीही विश्वासार्ह माहिती सापडली नाही. कृपया https://www.myscheme.gov.in या अधिकृत योजना पोर्टलवर तपासा किंवा संबंधित सरकारी कार्यालयाशी संपर्क साधा.",
+      "back_translation": "No reliable information has been found for your inquiries. Please check the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.439,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 38.2,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "KOK-18",
+      "language": "kok",
+      "category": "out_of_corpus",
+      "question": "विद्यार्थ्यांक क्रिप्टो करन्सी वेपार शिकपा खातीर सरकारी भत्ता कितलो मेळटा?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "प्रदान केलेल्या संदर्भात विद्यार्थ्यांसाठी क्रिप्टोकरन्सी ट्रेडिंग शिष्यवृत्तीसाठी सरकारी भत्तेचा उल्लेख नाही. संदर्भात केवळ पोस्ट-डॉक्टोरल रिसर्च, पीएचडी, मास्टर डिग्री आणि राहणीमान खर्च, उपकरणे आणि प्रवासासाठी इतर संबंधित भत्ते यासारख्या अभ्यासक्रमांसाठी आर्थिक सहाय्याचा उल्लेख नाही. क्रिप्टोकरन्सी ट्रेडिंग शिष्यवृत्तीचा उल्लेख नाही.",
+      "back_translation": "The context provided does not mention government allowances for students for cryptocurrency trading scholarships. The context does not mention financial support for only courses such as post-doctoral research, PhD, master's degree and living expenses, equipment and other related allowances for travel.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.5931,
+      "route": "direct",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [
+        "National Overseas Scholarship For Scheduled Tribes (ST) Students",
+        "Tribal Welfare Department Goa — Citizen Charter (Scholarships)",
+        "Post Matric Scholarship Scheme For The Students Belonging To Scheduled Tribe For Studies In India",
+        "South Goa Collectorate — Citizen Charter 2026 (Certificates & Services)"
+      ],
+      "language_ok": true,
+      "latency_s": 68.44,
+      "status": "PASS",
+      "sources_returned": [
+        "National Overseas Scholarship For Scheduled Tribes",
+        "Tribal Welfare Department Goa — Citizen Charter (S",
+        "Post Matric Scholarship Scheme For The Students Be"
+      ]
+    },
+    {
+      "id": "KOK-19",
+      "language": "kok",
+      "category": "out_of_corpus",
+      "question": "परग्रहावरील जीवांकडे संपर्क करपा खातीर सरकारी संशोधन अनुदान काय आसा?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "आपल्या चौकशीसाठी कोणतीही विश्वासार्ह माहिती सापडली नाही. कृपया https://www.myscheme.gov.in या अधिकृत योजना पोर्टलवर तपासा किंवा संबंधित सरकारी कार्यालयाशी संपर्क साधा.",
+      "back_translation": "No reliable information has been found for your inquiries. Please check the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.4581,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 33.61,
+      "status": "PASS",
+      "sources_returned": []
+    },
+    {
+      "id": "KOK-20",
+      "language": "kok",
+      "category": "out_of_corpus",
+      "question": "हायस्कूल विद्यार्थ्यांक अंटार्क्टिका संशोधन मोहिमे खातीर कितली शिष्यवृत्ती मेळटा?",
+      "ground_truth": "REFUSAL: No information found in official corpus",
+      "answer": "आपल्या चौकशीसाठी कोणतीही विश्वासार्ह माहिती सापडली नाही. कृपया https://www.myscheme.gov.in या अधिकृत योजना पोर्टलवर तपासा किंवा संबंधित सरकारी कार्यालयाशी संपर्क साधा.",
+      "back_translation": "No reliable information has been found for your inquiries. Please check the official scheme portal at https://www.myscheme.gov.in or contact the relevant government office.",
+      "answer_relevance": 1.0,
+      "source_accuracy": true,
+      "confidence": 0.4736,
+      "route": "fallback_failed",
+      "translator_backend": "nllb_marathi_proxy",
+      "retrieval_hint_applied": false,
+      "retrieved_doc_ids": [],
+      "language_ok": true,
+      "latency_s": 36.94,
+      "status": "PASS",
+      "sources_returned": []
+    }
+  ]
+}

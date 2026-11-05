@@ -1,5 +1,5 @@
-# Government AI Assistant — Backend Dockerfile
-# Build: docker build -t gov-ai-backend ./backend
+# Seva AI — Backend Dockerfile
+# Build: docker build -t seva-ai-backend ./backend
 # Run via docker-compose.yml at project root.
 
 FROM python:3.11-slim
@@ -16,22 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Layer 1: core web deps (changes rarely)
-RUN pip install --no-cache-dir \
-    httpx \
-    fastapi \
-    "uvicorn[standard]" \
-    pydantic \
-    pydantic-settings
-
-# Layer 2: heavy ML deps (cached separately)
-RUN pip install --no-cache-dir \
-    sentence-transformers \
-    chromadb \
-    rank-bm25 \
-    sentencepiece \
-    transformers \
-    pymupdf
+# Install from pinned requirements generated from pyproject
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application source
 COPY --chown=appuser:appuser app/ ./app/
