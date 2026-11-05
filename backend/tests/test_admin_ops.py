@@ -35,19 +35,27 @@ def _admin_env(monkeypatch):
     monkeypatch.setenv("ADMIN_USERNAME", "Atharv")
     monkeypatch.setenv("API_KEY", "dev-secret-key-123")
 
+    from app.db import init_db
+    init_db()
+
     # If ChromaDB is not installed or has no indexed chunks (such as on a fresh CI runner),
     # provide a realistic stub corpus so that tests are self-contained and reproducible.
     from app.admin import services
     try:
-        live_ids, live_metas = services.load_chroma_rows()
+        live_ids, live_metas, live_docs = services.load_chroma_payload()
         if not live_ids:
             raise RuntimeError("Chroma index is empty")
     except Exception:
         mock_ids = ["chunk-stse-1", "chunk-pmss-1"]
         mock_metas = [
-            {"scheme_id": "stse-goa", "title": "State Talent Search Examination", "source_url": "https://goa.gov.in/stse"},
-            {"scheme_id": "pmss", "title": "Prime Minister Scholarship Scheme", "source_url": "https://myscheme.gov.in/pmss"},
+            {"scheme_id": "stse-goa", "title": "State Talent Search Examination", "source_url": "https://goa.gov.in/stse", "chunk_index": 0},
+            {"scheme_id": "pmss", "title": "Prime Minister Scholarship Scheme", "source_url": "https://myscheme.gov.in/pmss", "chunk_index": 0},
         ]
+        mock_docs = [
+            "Official scheme eligibility guidelines and benefits documentation.",
+            "Official PMSS scholarship details.",
+        ]
+        monkeypatch.setattr(services, "load_chroma_payload", lambda: (mock_ids, mock_metas, mock_docs))
         monkeypatch.setattr(services, "load_chroma_rows", lambda: (mock_ids, mock_metas))
 
         def _mock_corpus_doc(doc_id: str):

@@ -23,6 +23,20 @@ from .config import PROJECT_ROOT
 
 DB_PATH: Path = PROJECT_ROOT / "data" / "seva_ai.db"
 _local = threading.local()
+_schema_initialized = False
+_schema_lock = threading.Lock()
+
+
+def _ensure_schema(conn: sqlite3.Connection) -> None:
+    """Ensure database tables and seeded users exist before any operation."""
+    global _schema_initialized
+    if _schema_initialized:
+        return
+    with _schema_lock:
+        if _schema_initialized:
+            return
+        _create_tables_and_seed(conn)
+        _schema_initialized = True
 
 
 def _get_connection() -> sqlite3.Connection:
@@ -34,12 +48,17 @@ def _get_connection() -> sqlite3.Connection:
         conn.execute("PRAGMA foreign_keys = ON;")
         conn.execute("PRAGMA journal_mode = WAL;")
         _local.conn = conn
+        _ensure_schema(conn)
     return _local.conn
 
 
 def init_db() -> None:
     """Initialize database tables and seed default admin account."""
     conn = _get_connection()
+    _create_tables_and_seed(conn)
+
+
+def _create_tables_and_seed(conn: sqlite3.Connection) -> None:
     with conn:
         conn.executescript(
             """
@@ -96,22 +115,31 @@ def init_db() -> None:
         )
 
     # Seed default administrator accounts if not present
-    if not get_user_by_username("atharv"):
-        create_user(
-            username="Atharv",
-            password="admin@1234",
-            full_name="Atharv (Lead Admin)",
-            role="admin",
+    cursor = conn.execute("SELECT id FROM users WHERE username = 'atharv' LIMIT 1;")
+    if not cursor.fetchone():
+        salt = secrets.token_hex(16)
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO users (id, username, password_hash, salt, full_name, role)
+            VALUES (?, ?, ?, ?, ?, ?);
+            """,
+            (str(uuid.uuid4()), "atharv", _hash_password("admin@1234", salt), salt, "Atharv (Lead Admin)", "admin"),
         )
-    default_admin_username = os.environ.get("ADMIN_DEFAULT_USERNAME", "admin")
+        conn.commit()
+
+    default_admin_username = os.environ.get("ADMIN_DEFAULT_USERNAME", "admin").lower()
     default_admin_password = os.environ.get("ADMIN_DEFAULT_PASSWORD", "Admin@123")
-    if not get_user_by_username(default_admin_username):
-        create_user(
-            username=default_admin_username,
-            password=default_admin_password,
-            full_name="System Administrator",
-            role="admin",
+    cursor = conn.execute("SELECT id FROM users WHERE username = ? LIMIT 1;", (default_admin_username,))
+    if not cursor.fetchone():
+        salt = secrets.token_hex(16)
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO users (id, username, password_hash, salt, full_name, role)
+            VALUES (?, ?, ?, ?, ?, ?);
+            """,
+            (str(uuid.uuid4()), default_admin_username, _hash_password(default_admin_password, salt), salt, "System Administrator", "admin"),
         )
+        conn.commit()
 
 
 # ---------------------------------------------------------------------------

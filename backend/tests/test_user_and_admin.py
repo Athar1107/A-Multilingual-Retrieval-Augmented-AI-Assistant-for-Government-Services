@@ -10,6 +10,8 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def setup_test_env(monkeypatch):
     monkeypatch.setenv("API_KEY", "dev-secret-key-123")
+    from app.db import init_db
+    init_db()
 
 
 def test_user_registration_login_and_me():

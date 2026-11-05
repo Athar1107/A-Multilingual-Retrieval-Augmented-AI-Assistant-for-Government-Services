@@ -35,13 +35,18 @@ def _source_label(url: str) -> str:
     return "unknown"
 
 
-def load_chroma_rows() -> tuple[list[str], list[dict[str, Any]]]:
+def load_chroma_payload() -> tuple[list[str], list[dict[str, Any]], list[str]]:
     import chromadb
 
     client = chromadb.PersistentClient(path=str(CHROMA_INDEX_PATH))
     coll = client.get_collection(CHROMA_COLLECTION_NAME)
     payload = coll.get(include=["documents", "metadatas"])
-    return payload.get("ids") or [], payload.get("metadatas") or []
+    return payload.get("ids") or [], payload.get("metadatas") or [], payload.get("documents") or []
+
+
+def load_chroma_rows() -> tuple[list[str], list[dict[str, Any]]]:
+    ids, metas, _ = load_chroma_payload()
+    return ids, metas
 
 
 def corpus_snapshot() -> dict[str, Any]:
@@ -84,14 +89,7 @@ def corpus_snapshot() -> dict[str, Any]:
 
 def corpus_document(doc_id: str) -> dict[str, Any] | None:
     try:
-        import chromadb
-
-        client = chromadb.PersistentClient(path=str(CHROMA_INDEX_PATH))
-        coll = client.get_collection(CHROMA_COLLECTION_NAME)
-        payload = coll.get(include=["documents", "metadatas"])
-        documents = payload.get("documents") or []
-        ids = payload.get("ids") or []
-        metas = payload.get("metadatas") or []
+        ids, metas, documents = load_chroma_payload()
     except Exception:
         return None
 
