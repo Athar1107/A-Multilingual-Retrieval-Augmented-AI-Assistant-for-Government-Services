@@ -12,17 +12,44 @@ from threading import Lock
 from typing import Any, AsyncGenerator
 
 import structlog
-from fastapi import FastAPI, Header, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from .config import API_KEY, CHROMA_COLLECTION_NAME, CHROMA_INDEX_PATH
+from .db import (
+    admin_delete_user,
+    admin_get_all_users,
+    admin_get_recent_messages,
+    authenticate_user,
+    create_conversation,
+    create_session,
+    create_user,
+    delete_conversation,
+    delete_session,
+    get_conversation,
+    get_or_create_google_user,
+    get_user_by_username,
+    get_user_from_token,
+    init_db,
+    list_conversations,
+    save_message_pair,
+    update_conversation_title,
+)
 from .schemas import (
     AdminStatsResponse,
+    AuthResponse,
+    ConversationCreateRequest,
+    ConversationDetailResponse,
+    ConversationResponse,
+    GoogleAuthRequest,
+    LoginRequest,
     QueryRequest,
     QueryResponse,
+    RegisterRequest,
     SourceCitation,
     SourceCorpusStats,
+    UserResponse,
 )
 
 # ---------------------------------------------------------------------------
@@ -70,15 +97,27 @@ class _SlidingWindowRateLimiter:
             return True
 
 
-QUERY_BODY_LIMIT_BYTES = 16 * 1024
-QUERY_RATE_LIMIT = int(os.environ.get("RATE_LIMIT_CHAT_PER_MINUTE", "20"))
+QUERY_BODY_LIMIT_BYTES = 32 * 1024
+QUERY_RATE_LIMIT = int(os.environ.get("RATE_LIMIT_CHAT_PER_MINUTE", "60"))
+ADMIN_RATE_LIMIT = int(os.environ.get("ADMIN_RATE_LIMIT_PER_MINUTE", "60"))
 _query_limiter = _SlidingWindowRateLimiter(QUERY_RATE_LIMIT)
+_admin_limiter = _SlidingWindowRateLimiter(ADMIN_RATE_LIMIT)
 
 
 def _allowed_origins() -> list[str]:
-    """Return explicitly configured browser origins, never a credentialed wildcard."""
+    """Return configured origins or standard local dev frontends."""
     configured = os.environ.get("ALLOWED_ORIGINS", "")
-    return [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+    origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+    if not origins:
+        return [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+    return origins
 
 
 def _get_pipeline() -> Any:
@@ -106,6 +145,47 @@ def _verify_api_key(x_api_key: str | None) -> None:
     if expected_key:
         if not x_api_key or x_api_key.strip() != expected_key:
             raise HTTPException(status_code=401, detail="Invalid or missing API key.")
+
+
+def _get_current_user(
+    authorization: str | None = Header(default=None),
+    x_user_token: str | None = Header(default=None, alias="X-User-Token"),
+) -> dict[str, Any] | None:
+    """Extract user from Bearer token or X-User-Token header."""
+    token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    elif x_user_token:
+        token = x_user_token.strip()
+    if not token:
+        return None
+    return get_user_from_token(token)
+
+
+def _require_user(
+    authorization: str | None = Header(default=None),
+    x_user_token: str | None = Header(default=None, alias="X-User-Token"),
+) -> dict[str, Any]:
+    user = _get_current_user(authorization, x_user_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required. Please sign in.")
+    return user
+
+
+def _require_admin(
+    authorization: str | None = Header(default=None),
+    x_user_token: str | None = Header(default=None, alias="X-User-Token"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> dict[str, Any]:
+    expected_key = os.environ.get("API_KEY", API_KEY).strip()
+    if expected_key and x_api_key and x_api_key.strip() == expected_key:
+        return {"id": "system_admin", "username": "api_admin", "role": "admin", "full_name": "API Administrator"}
+    user = _get_current_user(authorization, x_user_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid API key or missing authentication.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Administrator privileges required.")
+    return user
 
 
 def _get_corpus_telemetry() -> dict[str, Any]:
@@ -166,8 +246,9 @@ def _get_corpus_telemetry() -> dict[str, Any]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Pre-warm models on startup so the first user query has no cold-start delay."""
+    """Initialize database and pre-warm models on startup."""
     logger.info("seva_ai_startup", version="0.1.0")
+    init_db()
     try:
         await asyncio.to_thread(_get_pipeline)
         logger.info("models_prewarmed_successfully")
@@ -191,11 +272,16 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
-    allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-API-Key", "X-Request-ID"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
     max_age=600,
 )
+
+from .admin.router import public_admin_router, router as admin_ops_router
+
+app.include_router(public_admin_router)
+app.include_router(admin_ops_router)
 
 
 @app.middleware("http")
@@ -223,6 +309,16 @@ async def security_and_logging_controls(request: Request, call_next: Any) -> Res
                 headers={"Retry-After": "60"},
             )
 
+    if request.url.path.startswith("/admin"):
+        client_id = request.client.host if request.client else "unknown"
+        if not _admin_limiter.allowed(client_id):
+            logger.warning("admin_rate_limited", path=request.url.path, client=client_id)
+            return JSONResponse(
+                {"detail": "Too many admin requests. Please try again shortly."},
+                status_code=429,
+                headers={"Retry-After": "60"},
+            )
+
     response = await call_next(request)
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
 
@@ -242,6 +338,10 @@ async def security_and_logging_controls(request: Request, call_next: Any) -> Res
     )
     return response
 
+
+# ---------------------------------------------------------------------------
+# Public Health & Service Endpoints
+# ---------------------------------------------------------------------------
 
 @app.get("/health")
 async def health() -> dict[str, str]:
@@ -267,13 +367,158 @@ async def translate_status() -> dict[str, str]:
     return {"backend": backend, "note": notes.get(backend, "")}
 
 
+# ---------------------------------------------------------------------------
+# Authentication Endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/api/auth/register", response_model=AuthResponse)
+async def register_endpoint(req: RegisterRequest) -> AuthResponse:
+    clean_username = req.username.strip().lower()
+    if get_user_by_username(clean_username):
+        raise HTTPException(status_code=400, detail="Username is already taken.")
+    user = create_user(
+        username=clean_username,
+        password=req.password,
+        full_name=req.full_name,
+        role="user",
+    )
+    token = create_session(user["id"])
+    return AuthResponse(token=token, user=UserResponse(**user))
+
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+async def login_endpoint(req: LoginRequest) -> AuthResponse:
+    user = authenticate_user(req.username, req.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+    token = create_session(user["id"])
+    return AuthResponse(token=token, user=UserResponse(**user))
+
+
+@app.post("/api/auth/google", response_model=AuthResponse)
+async def google_auth_endpoint(req: GoogleAuthRequest) -> AuthResponse:
+    """Authenticate or register user via Google Sign-In."""
+    email = req.email
+    name = req.name
+    google_sub = ""
+
+    # If credential is a JWT token from Google Identity Services, verify with Google
+    if req.credential and req.credential.count(".") == 2:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                res = await client.get(
+                    f"https://oauth2.googleapis.com/tokeninfo?id_token={req.credential}"
+                )
+                if res.status_code == 200:
+                    info = res.json()
+                    email = info.get("email")
+                    name = info.get("name") or name
+                    google_sub = info.get("sub", "")
+        except Exception as exc:
+            logger.warning("google_token_verification_failed", error=str(exc))
+
+    if not email:
+        # Support direct email parameter or fallback for dev/testing
+        if req.credential and "@" in req.credential:
+            email = req.credential.strip().lower()
+            name = name or email.split("@")[0].title()
+        else:
+            raise HTTPException(status_code=400, detail="Invalid Google authentication credential.")
+
+    user = get_or_create_google_user(
+        email=email,
+        full_name=name or email.split("@")[0].title(),
+        google_sub=google_sub,
+    )
+    token = create_session(user["id"])
+    return AuthResponse(token=token, user=UserResponse(**user))
+
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def get_me_endpoint(user: dict[str, Any] = Depends(_require_user)) -> UserResponse:
+    return UserResponse(**user)
+
+
+@app.post("/api/auth/logout")
+async def logout_endpoint(
+    authorization: str | None = Header(default=None),
+    x_user_token: str | None = Header(default=None, alias="X-User-Token"),
+) -> dict[str, str]:
+    token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    elif x_user_token:
+        token = x_user_token.strip()
+    if token:
+        delete_session(token)
+    return {"status": "logged_out"}
+
+
+# ---------------------------------------------------------------------------
+# Per-User Conversation Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/conversations", response_model=list[ConversationResponse])
+async def list_conversations_endpoint(
+    user: dict[str, Any] = Depends(_require_user),
+) -> list[ConversationResponse]:
+    convs = list_conversations(user["id"])
+    return [ConversationResponse(**c) for c in convs]
+
+
+@app.post("/api/conversations", response_model=ConversationResponse)
+async def create_conversation_endpoint(
+    req: ConversationCreateRequest,
+    user: dict[str, Any] = Depends(_require_user),
+) -> ConversationResponse:
+    conv = create_conversation(user["id"], req.title)
+    return ConversationResponse(**conv, message_count=0, updated_at=conv["created_at"])
+
+
+@app.get("/api/conversations/{conv_id}", response_model=ConversationDetailResponse)
+async def get_conversation_endpoint(
+    conv_id: str,
+    user: dict[str, Any] = Depends(_require_user),
+) -> ConversationDetailResponse:
+    conv = get_conversation(conv_id, user["id"])
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return ConversationDetailResponse(**conv)
+
+
+@app.patch("/api/conversations/{conv_id}")
+async def rename_conversation_endpoint(
+    conv_id: str,
+    req: ConversationCreateRequest,
+    user: dict[str, Any] = Depends(_require_user),
+) -> dict[str, bool]:
+    ok = update_conversation_title(conv_id, user["id"], req.title)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return {"ok": True}
+
+
+@app.delete("/api/conversations/{conv_id}")
+async def delete_conversation_endpoint(
+    conv_id: str,
+    user: dict[str, Any] = Depends(_require_user),
+) -> dict[str, bool]:
+    ok = delete_conversation(conv_id, user["id"])
+    if not ok:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Admin Panel Endpoints
+# ---------------------------------------------------------------------------
+
 @app.get("/admin/stats", response_model=AdminStatsResponse)
 async def admin_stats(
-    x_api_key: str | None = Header(None, alias="X-API-Key"),
+    admin: dict[str, Any] = Depends(_require_admin),
 ) -> AdminStatsResponse:
-    """Return corpus telemetry and query analytics (protected by X-API-Key)."""
-    _verify_api_key(x_api_key)
-
+    """Return corpus telemetry and query analytics."""
     uptime = round(time.time() - _START_TIME, 2)
     corpus_info = _get_corpus_telemetry()
 
@@ -299,13 +544,69 @@ async def admin_stats(
     )
 
 
+@app.get("/admin/dashboard")
+async def admin_dashboard(
+    admin: dict[str, Any] = Depends(_require_admin),
+) -> dict[str, Any]:
+    """Comprehensive admin dashboard: system stats, user roster, and audit logs."""
+    uptime = round(time.time() - _START_TIME, 2)
+    corpus_info = _get_corpus_telemetry()
+
+    pipeline = _pipeline
+    t_backend = "not_loaded"
+    if pipeline and getattr(pipeline, "translator", None):
+        t_backend = getattr(pipeline.translator, "backend_name", "unknown")
+
+    with _stats_lock:
+        q_count = _query_counter
+        distribution = dict(_route_counts)
+
+    users = admin_get_all_users()
+    recent_messages = admin_get_recent_messages(50)
+
+    return {
+        "stats": {
+            "uptime_seconds": uptime,
+            "query_count": q_count,
+            "translator_backend": t_backend,
+            "corpus": corpus_info["corpus"],
+            "total_documents": corpus_info["total_documents"],
+            "total_chunks": corpus_info["total_chunks"],
+            "route_distribution": distribution,
+        },
+        "users": users,
+        "recent_messages": recent_messages,
+    }
+
+
+@app.delete("/admin/users/{user_id}")
+async def admin_delete_user_endpoint(
+    user_id: str,
+    admin: dict[str, Any] = Depends(_require_admin),
+) -> dict[str, str]:
+    if admin.get("id") == user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete currently logged-in administrator.")
+    ok = admin_delete_user(user_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="User not found or cannot delete super admin.")
+    return {"status": "user_deleted"}
+
+
+# ---------------------------------------------------------------------------
+# Main RAG Query Endpoint (with conversation persistence)
+# ---------------------------------------------------------------------------
+
 @app.post("/query", response_model=QueryResponse)
 async def query(
     request: QueryRequest,
     x_api_key: str | None = Header(None, alias="X-API-Key"),
+    authorization: str | None = Header(None),
+    x_user_token: str | None = Header(None, alias="X-User-Token"),
 ) -> QueryResponse:
-    """Run a user query through the full RAG pipeline (protected by X-API-Key)."""
-    _verify_api_key(x_api_key)
+    """Run query through RAG pipeline, optionally persisting to user conversation."""
+    current_user = _get_current_user(authorization, x_user_token)
+    if not current_user:
+        _verify_api_key(x_api_key)
 
     try:
         pipeline = _get_pipeline()
@@ -328,12 +629,50 @@ async def query(
         )
     except Exception as exc:
         logger.error("query_processing_failed", error=str(exc))
+        try:
+            from .admin.store import log_query
+
+            log_query(
+                language=resolved_language,
+                query_preview=query_preview,
+                route=None,
+                confidence=None,
+                translator_backend=None,
+                retrieved_doc_ids=[],
+                latency_ms=None,
+                status="error",
+                error_type=type(exc).__name__,
+                source="public",
+            )
+        except Exception as log_exc:
+            logger.warning("query_log_failed", error=str(log_exc))
         raise HTTPException(
             status_code=503,
             detail="The assistant is temporarily unavailable. Please try again shortly.",
         ) from None
 
     route_val = result.get("route", "direct")
+    try:
+        from .admin.store import log_query
+
+        latencies = result.get("latencies_ms") or {}
+        log_query(
+            language=resolved_language,
+            query_preview=query_preview,
+            route=route_val,
+            confidence=result.get("confidence"),
+            translator_backend=result.get("translator_backend"),
+            retrieved_doc_ids=result.get("retrieved_doc_ids") or [],
+            latency_ms=latencies.get("total"),
+            latency_translate_in_ms=latencies.get("translate_in"),
+            latency_retrieve_ms=latencies.get("retrieve"),
+            latency_generate_ms=latencies.get("generate"),
+            latency_translate_out_ms=latencies.get("translate_out"),
+            status="ok",
+            source="public",
+        )
+    except Exception as log_exc:
+        logger.warning("query_log_failed", error=str(log_exc))
 
     with _stats_lock:
         global _query_counter
@@ -347,16 +686,38 @@ async def query(
         query_preview=query_preview,
     )
 
+    conv_id = request.conversation_id
+    if current_user:
+        try:
+            if not conv_id:
+                words = request.text.strip().split()
+                title = " ".join(words[:6]) if words else "Scheme Consultation"
+                new_conv = create_conversation(current_user["id"], title)
+                conv_id = new_conv["id"]
+
+            save_message_pair(
+                conversation_id=conv_id,
+                user_text=request.text,
+                assistant_text=result["answer"],
+                language=resolved_language,
+                confidence=result.get("confidence"),
+                route=route_val,
+                sources=result.get("sources", []),
+            )
+        except Exception as exc:
+            logger.warning("failed_saving_chat_history", error=str(exc))
+
     return QueryResponse(
         query=request.text,
         answer=result["answer"],
         confidence=result["confidence"],
         route=route_val,
         sources=[
-            SourceCitation(title=s["title"], source_url=s["source_url"])
+            SourceCitation(title=s.get("title", ""), source_url=s.get("source_url") or s.get("url") or "")
             for s in result.get("sources", [])
         ],
         translator_backend=result.get("translator_backend"),
         retrieval_hint_applied=result.get("retrieval_hint_applied", False),
         retrieved_doc_ids=result.get("retrieved_doc_ids", []),
+        conversation_id=conv_id,
     )

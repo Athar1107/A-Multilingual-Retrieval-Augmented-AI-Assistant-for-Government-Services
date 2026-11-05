@@ -47,11 +47,13 @@ Citizens can ask questions about government schemes in **English or Goan Konkani
 | LLM Generation | ✅ | `llama3.2` via Ollama local inference |
 | Translation Layer | ✅ | IndicTrans2 200M distilled (native Goan Konkani `gom_Deva` ↔ English `eng_Latn`) with NLLB-200 fallback |
 | Fallback Routing | ✅ | 3-state routing (`direct` \| `fallback_recovered` \| `fallback_failed`) with refusal detection & translation back |
-| REST API | ✅ | FastAPI with `/query`, `/health`, `/translate/status`, `/admin/stats` |
-| Security | ✅ | `X-API-Key` authentication on `/query` and `/admin/stats`, structlog sanitized JSON logging |
-| Frontend Chat UI | ✅ | Present — React 18 + Vite SPA with real-time route badges & source citations |
+| REST API | ✅ | FastAPI with `/query`, `/health`, `/translate/status`, `/admin/stats`, `/admin/dashboard`, `/api/auth/*`, `/api/conversations/*` |
+| User Auth & Chat History | ✅ | PBKDF2-HMAC-SHA256 salted auth, persistent per-user consultations in SQLite, auto-saved conversations |
+| Admin Command Center | ✅ | Secure dashboard for telemetry, corpus breakdown, user roster management & live query audit logs |
+| Security | ✅ | `X-API-Key` & Bearer token auth, role-based access control, structlog sanitized JSON logging |
+| Frontend Chat UI | ✅ | Present — React 18 + Vite SPA with consultation history sidebar, auth modal, route badges & admin console |
 | Containerization | ✅ | Present — Multi-stage Dockerfile and Docker Compose with pinned images and Nginx reverse proxy |
-| Automated Tests | ✅ | 23 unit and integration tests passing (`backend/tests/`) |
+| Automated Tests | ✅ | **26 unit and integration tests passing** (`backend/tests/`) |
 
 ---
 
@@ -146,6 +148,59 @@ Access the application at **http://localhost**.
 
 ---
 
+## Operational Admin Center (`/admin`)
+
+The platform features an isolated, production-grade operational admin console at `/admin`:
+
+- **URL:** `http://localhost:5173/admin`
+- **Default Credentials:**
+  - **Username:** `Atharv`
+  - **Password / Key:** `admin@1234`
+- **Environment Configuration:**
+  ```bash
+  ADMIN_USERNAME=Atharv
+  ADMIN_API_KEY=admin@1234
+  QUERY_LOG_DB_PATH=data/query_log.db
+  ```
+- **Security:**
+  - Authenticated via `X-Admin-Key` header with constant-time HMAC digest (`hmac.compare_digest`).
+  - Strict fail-closed policy (503 Service Unavailable if `ADMIN_API_KEY` is unset).
+  - Rate-limited admin routes; failed attempts logged without exposing key values.
+  - Secret redaction: `GET /admin/system` completely strips any fields containing `KEY`, `TOKEN`, `SECRET`, or `PASSWORD`.
+  - Path traversal protection: evaluation run names validated against local filesystem directory whitelist.
+  - Admin key held **only in React state** (never persisted in `localStorage` or cookies); flushes instantly on 401.
+
+### Admin Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/admin/login` | Authenticate with username and password; exchanges for session admin key |
+| `GET` | `/admin/auth/check` | Verify current `X-Admin-Key` validity |
+| `GET` | `/admin/overview` | Total query counts, 24h volume, p95/avg latency, route donut, corpus stats |
+| `GET` | `/admin/queries` | Filterable, paginated query log (`limit`, `offset`, `route`, `language`, `status`, `q`) |
+| `GET` | `/admin/queries/{id}` | Detailed query trace with stage-level breakdown (translate_in, retrieve, generate, translate_out) |
+| `GET` | `/admin/corpus` | Real-time ChromaDB collection telemetry broken down by source |
+| `GET` | `/admin/corpus/{doc_id}` | Inspect chunks, dense/BM25 indexing, and token lengths for any document |
+| `GET` | `/admin/eval/runs` | List audited evaluation runs from `backend/eval/` |
+| `GET` | `/admin/eval/runs/{name}` | View per-question evaluation scores with `scorer_version` validation |
+| `GET` | `/admin/system` | Model roster, translator backend, calibrated thresholds, live component health dots |
+| `POST` | `/admin/debug/query` | Run real query pipeline with dense/BM25/fused scores (marked `source="admin"`) |
+| `POST` | `/admin/reindex` | Trigger background corpus reindexing (`{"confirm": true}`, single-flight 409 locked) |
+| `GET` | `/admin/reindex/status` | Current status and timestamp of background reindexing |
+
+---
+
+## User Authentication & Saved Consultations
+
+Citizens can sign in or register to retain private chat history across devices:
+- **Sign In / Create Account Modal:** Accessible via topbar button or sidebar promo card.
+- **Demo Citizen Account:** `demo` / `demo1234`
+- **Google Sign-In:** One-click OAuth login via `/api/auth/google`.
+- **Private Consultations:** Per-user consultation history saved in SQLite database with instant reload and deletion.
+- **Session Security:** PBKDF2-HMAC-SHA256 hashed passwords and cryptographically secure tokens.
+
+---
+
 ## Running Evaluation
 
 Run the audited v2.0 evaluation suite:
@@ -170,6 +225,9 @@ Exports:
 ## Running Tests
 
 ```bash
-pytest
+# Run full pytest suite (37 unit, integration, and admin operational tests)
+pytest backend/tests/ -v
+
+# Run frontend smoke tests
+cd frontend && npm test
 ```
-23 tests covering ingestion, indexing, pipeline orchestration, 3-way fallback routing, API authentication, and translation hints.

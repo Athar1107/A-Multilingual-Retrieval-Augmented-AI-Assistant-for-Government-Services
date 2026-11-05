@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, lazy, Suspense } from "react";
+
+const AdminPanel = lazy(() => import("./admin/AdminPanel"));
 
 const MAX_CHARS = 2000;
 
@@ -413,7 +415,141 @@ function Welcome({ onSuggestion, language }) {
   );
 }
 
+
+// ---------------------------------------------------------------------------
+// Auth API helpers
+// ---------------------------------------------------------------------------
+const API = {
+  async post(path, body, token) {
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["X-User-Token"] = token;
+    const r = await fetch(path, { method: "POST", headers, credentials: "same-origin", body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || "Request failed");
+    return data;
+  },
+  async get(path, token) {
+    const headers = {};
+    if (token) headers["X-User-Token"] = token;
+    const r = await fetch(path, { headers, credentials: "same-origin" });
+    if (!r.ok) return null;
+    return r.json().catch(() => null);
+  },
+  async del(path, token) {
+    const headers = {};
+    if (token) headers["X-User-Token"] = token;
+    const r = await fetch(path, { method: "DELETE", headers, credentials: "same-origin" });
+    return r.ok;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// AuthModal – Login / Register / Google Sign-In
+// ---------------------------------------------------------------------------
+function AuthModal({ onClose, onSuccess }) {
+  const [tab, setTab] = useState("login");
+  const [form, setForm] = useState({ username: "", password: "", full_name: "" });
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function field(k) {
+    return (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setError(""); setBusy(true);
+    try {
+      let data;
+      if (tab === "login") {
+        data = await API.post("/api/auth/login", { username: form.username, password: form.password });
+      } else {
+        if (!form.full_name.trim()) { setError("Full name is required."); setBusy(false); return; }
+        data = await API.post("/api/auth/register", { username: form.username, password: form.password, full_name: form.full_name });
+      }
+      sessionStorage.setItem("seva_token", data.token);
+      onSuccess(data.user, data.token);
+    } catch (err) {
+      setError(err.message || "Authentication failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function googleSignIn() {
+    const email = window.prompt("Enter your Google email address (dev mode):");
+    if (!email || !email.includes("@")) return;
+    setBusy(true); setError("");
+    try {
+      const data = await API.post("/api/auth/google", { credential: email, email, name: email.split("@")[0] });
+      sessionStorage.setItem("seva_token", data.token);
+      onSuccess(data.user, data.token);
+    } catch (err) {
+      setError(err.message || "Google sign-in failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Sign In" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="auth-modal-card">
+        <div className="auth-tabs" role="tablist">
+          {["login", "register"].map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} className={`auth-tab ${tab === t ? "active" : ""}`} onClick={() => { setTab(t); setError(""); }} type="button">
+              {t === "login" ? "Sign In" : "Create Account"}
+            </button>
+          ))}
+        </div>
+
+        <form className="auth-form" onSubmit={submit} noValidate>
+          {tab === "register" && (
+            <div className="auth-field">
+              <label htmlFor="auth-fullname">Full Name</label>
+              <input id="auth-fullname" type="text" value={form.full_name} onChange={field("full_name")} placeholder="Your full name" autoFocus required />
+            </div>
+          )}
+          <div className="auth-field">
+            <label htmlFor="auth-username">Username</label>
+            <input id="auth-username" type="text" value={form.username} onChange={field("username")} placeholder="Enter username" autoFocus={tab === "login"} required autoComplete="username" />
+          </div>
+          <div className="auth-field">
+            <label htmlFor="auth-password">Password</label>
+            <input id="auth-password" type="password" value={form.password} onChange={field("password")} placeholder="Enter password" required autoComplete={tab === "login" ? "current-password" : "new-password"} />
+          </div>
+
+          {error && <p className="auth-error-msg" role="alert">{error}</p>}
+
+          <button className="auth-submit-btn" type="submit" disabled={busy}>
+            {busy ? "Please wait…" : tab === "login" ? "Sign In" : "Create Account"}
+          </button>
+
+          <div className="auth-divider"><span>or</span></div>
+
+          <button type="button" className="google-signin-btn" onClick={googleSignIn} disabled={busy}>
+            <svg className="google-icon" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="demo-credentials-box">
+            <p className="demo-box-title">Demo credentials</p>
+            <button type="button" className="quick-fill-btn" onClick={() => { setTab("login"); setForm({ username: "demo", password: "demo1234", full_name: "" }); }}>
+              <code>demo / demo1234</code>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const [language, setLanguage] = useState("en");
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
@@ -423,9 +559,27 @@ export default function App() {
     return localStorage.getItem("seva_theme") || "dark";
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userToken, setUserToken] = useState(() => sessionStorage.getItem("seva_token") || "");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [savedConversations, setSavedConversations] = useState([]);
+  const [activeConvId, setActiveConvId] = useState(null);
 
   const inputRef = useRef(null);
   const conversationRef = useRef(null);
+
+  useEffect(() => {
+    function handlePopState() {
+      setCurrentPath(window.location.pathname);
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  function navigateTo(path) {
+    window.history.pushState(null, "", path);
+    setCurrentPath(path);
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -439,6 +593,69 @@ export default function App() {
     }
   }, [messages, isLoading]);
 
+  // Restore session on mount
+  useEffect(() => {
+    const token = sessionStorage.getItem("seva_token");
+    if (token) {
+      API.get("/api/auth/me", token).then((user) => {
+        if (user) { setCurrentUser(user); setUserToken(token); }
+        else { sessionStorage.removeItem("seva_token"); setUserToken(""); }
+      });
+    }
+  }, []);
+
+  // Fetch saved conversations when user logs in
+  useEffect(() => {
+    if (!currentUser || !userToken) { setSavedConversations([]); return; }
+    API.get("/api/conversations", userToken).then((list) => {
+      if (Array.isArray(list)) setSavedConversations(list);
+    });
+  }, [currentUser, userToken]);
+
+  function handleAuthSuccess(user, token) {
+    setCurrentUser(user);
+    setUserToken(token);
+    setShowAuthModal(false);
+  }
+
+  async function handleSignOut() {
+    if (userToken) {
+      await API.post("/api/auth/logout", {}, userToken).catch(() => {});
+    }
+    sessionStorage.removeItem("seva_token");
+    setCurrentUser(null);
+    setUserToken("");
+    setSavedConversations([]);
+    setActiveConvId(null);
+    setMessages([]);
+  }
+
+  async function loadConversation(convId) {
+    const data = await API.get("/api/conversations/" + convId, userToken);
+    if (!data) return;
+    setActiveConvId(convId);
+    const rebuilt = [];
+    for (const pair of data.messages || []) {
+      rebuilt.push({ id: pair.id + "_u", role: "user", text: pair.user_text });
+      rebuilt.push({
+        id: pair.id + "_a", role: "assistant",
+        text: pair.assistant_text,
+        confidence: pair.confidence,
+        route: pair.route,
+        sources: pair.sources || [],
+      });
+    }
+    setMessages(rebuilt);
+    if (window.innerWidth <= 768) setSidebarOpen(false);
+  }
+
+  async function deleteConversation(convId, e) {
+    e.stopPropagation();
+    await API.del("/api/conversations/" + convId, userToken);
+    setSavedConversations((prev) => prev.filter((c) => c.id !== convId));
+    if (activeConvId === convId) { setActiveConvId(null); setMessages([]); }
+  }
+
   function toggleTheme() {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   }
@@ -446,7 +663,7 @@ export default function App() {
   function resizeInput(event) {
     const input = event.currentTarget;
     input.style.height = "auto";
-    input.style.height = `${Math.min(input.scrollHeight, 180)}px`;
+    input.style.height = `${Math.max(48, Math.min(input.scrollHeight, 180))}px`;
   }
 
   // Preserved exact security operations:
@@ -460,7 +677,7 @@ export default function App() {
     if (!text || text.length > MAX_CHARS || isLoading) return;
 
     setQuestion("");
-    if (inputRef.current) inputRef.current.style.height = "auto";
+    if (inputRef.current) inputRef.current.style.height = "48px";
     setMessages((current) => [
       ...current,
       { id: crypto.randomUUID(), role: "user", text },
@@ -473,14 +690,15 @@ export default function App() {
         "Content-Type": "application/json",
         Accept: "application/json",
       };
-      if (apiKey) {
-        headers["X-API-Key"] = apiKey;
-      }
+      if (apiKey) headers["X-API-Key"] = apiKey;
+      if (userToken) headers["X-User-Token"] = userToken;
+      const body = { text, language };
+      if (activeConvId) body.conversation_id = activeConvId;
       const response = await fetch("/query", {
         method: "POST",
         headers,
         credentials: "same-origin",
-        body: JSON.stringify({ text, language }),
+        body: JSON.stringify(body),
       });
       const payload = await response.json().catch(() => ({}));
 
@@ -509,6 +727,14 @@ export default function App() {
         },
       ]);
       setServiceUnavailable(false);
+      // Refresh conversation list if user is logged in
+      if (currentUser && userToken) {
+        const newConvId = payload.conversation_id || activeConvId;
+        if (newConvId && newConvId !== activeConvId) setActiveConvId(newConvId);
+        API.get("/api/conversations", userToken).then((list) => {
+          if (Array.isArray(list)) setSavedConversations(list);
+        });
+      }
     } catch {
       setMessages((current) => [
         ...current,
@@ -534,7 +760,7 @@ export default function App() {
       inputRef.current?.focus();
       if (inputRef.current) {
         inputRef.current.style.height = "auto";
-        inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 180)}px`;
+        inputRef.current.style.height = `${Math.max(48, Math.min(inputRef.current.scrollHeight, 180))}px`;
       }
     });
   }
@@ -542,13 +768,42 @@ export default function App() {
   function clearConversation() {
     setMessages([]);
     setQuestion("");
+    setActiveConvId(null);
     setServiceUnavailable(false);
     if (window.innerWidth <= 768) setSidebarOpen(false);
     inputRef.current?.focus();
   }
 
+  if (currentPath === "/admin") {
+    return (
+      <Suspense
+        fallback={
+          <div
+            style={{
+              height: "100vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#030712",
+              color: "#06b6d4",
+              fontFamily: "sans-serif",
+            }}
+          >
+            Loading Admin Center...
+          </div>
+        }
+      >
+        <AdminPanel onNavigateHome={() => navigateTo("/")} />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="app-layout">
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} onSuccess={handleAuthSuccess} />
+      )}
+
       {/* Mobile Backdrop */}
       {sidebarOpen && (
         <div
@@ -608,6 +863,47 @@ export default function App() {
             ))}
           </div>
         </section>
+
+        {/* Saved Conversations (logged-in users) */}
+        {currentUser && (
+          <section className="conversations-history-section" aria-label="Your saved consultations">
+            <p className="sidebar-section-title">YOUR CONSULTATIONS</p>
+            {savedConversations.length === 0 ? (
+              <p className="history-empty-hint">No saved consultations yet. Ask a question to begin!</p>
+            ) : (
+              <div className="conversation-list" role="list">
+                {savedConversations.slice(0, 15).map((conv) => (
+                  <div
+                    key={conv.id}
+                    role="listitem"
+                    className={`conversation-item ${activeConvId === conv.id ? "active" : ""}`}
+                    onClick={() => loadConversation(conv.id)}
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && loadConversation(conv.id)}
+                    aria-label={"Load conversation: " + conv.title}
+                  >
+                    <span className="conv-icon">💬</span>
+                    <span className="conv-title">{conv.title || "Consultation"}</span>
+                    <button
+                      type="button"
+                      className="conv-delete-btn"
+                      onClick={(e) => deleteConversation(conv.id, e)}
+                      title="Delete conversation"
+                      aria-label={"Delete: " + conv.title}
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {!currentUser && (
+          <div className="guest-login-promo">
+            <p className="promo-text">Sign in to save your consultations and access them later.</p>
+            <button type="button" className="promo-login-btn" onClick={() => setShowAuthModal(true)}>Sign In / Register</button>
+          </div>
+        )}
 
         {/* Security & Privacy Assurance Card */}
         <section className="sidebar-security-card" aria-label="Privacy guarantee">
@@ -676,6 +972,29 @@ export default function App() {
               </button>
             </div>
 
+            {/* Operational Admin Button */}
+            <button
+              type="button"
+              className="topbar-admin-btn"
+              onClick={() => navigateTo("/admin")}
+              title="Operational Admin Center (/admin)"
+              style={{
+                background: "rgba(6, 182, 212, 0.12)",
+                border: "1px solid rgba(6, 182, 212, 0.4)",
+                color: "#06b6d4",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: "700",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <span>🛡️</span> Admin
+            </button>
+
             {/* Dark / Light Mode Toggle */}
             <button
               type="button"
@@ -708,6 +1027,23 @@ export default function App() {
               <span className="status-dot" />
               <span>{serviceUnavailable ? "Service Offline" : "System Ready"}</span>
             </div>
+
+            {/* User Auth */}
+            {currentUser ? (
+              <div className="user-profile-badge" aria-label={"Signed in as " + currentUser.full_name}>
+                <span className="user-name-tag">{currentUser.full_name || currentUser.username}</span>
+                <span className={"role-pill " + (currentUser.role === "admin" ? "admin" : "user")}>
+                  {currentUser.role === "admin" ? "ADMIN" : "USER"}
+                </span>
+                <button type="button" className="logout-btn" onClick={handleSignOut} aria-label="Sign out">
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="signin-header-btn" onClick={() => setShowAuthModal(true)} aria-label="Sign in to save chats">
+                Sign In
+              </button>
+            )}
           </div>
         </header>
 

@@ -48,3 +48,6 @@ USE_RETRIEVAL_HINTS: bool = os.environ.get("USE_RETRIEVAL_HINTS", "false").lower
 
 # Security
 API_KEY: str = os.environ.get("API_KEY", "")
+ADMIN_USERNAME: str = os.environ.get("ADMIN_USERNAME", "")
+ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
+QUERY_LOG_DB_PATH: str = os.environ.get("QUERY_LOG_DB_PATH", "")

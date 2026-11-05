@@ -47,14 +47,19 @@ jobs:
                  tests/test_fallback_routing.py \
                  tests/test_api_security.py \
                  tests/test_translation_hints.py \
+                 tests/test_user_and_admin.py \
+                 tests/test_admin_ops.py \
                  -v --tb=short
         working-directory: backend
         env:
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
+          ADMIN_API_KEY: "admin@1234"
+          ADMIN_USERNAME: "Atharv"
+          QUERY_LOG_DB_PATH: "data/query_log.db"
 
   frontend-build:
-    name: Frontend Build
+    name: Frontend Build & Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,3 +78,6 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Run frontend smoke test
+        run: npm test

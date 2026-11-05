@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -24,6 +24,10 @@ class QueryRequest(BaseModel):
     language: Literal["en", "kok"] | None = Field(
         default=None,
         description="Query language: 'en' (English), 'kok' (Goan Konkani), or None for auto-detection.",
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="Optional conversation ID to append this exchange to logged-in user history.",
     )
 
     @field_validator("text")
@@ -58,6 +62,7 @@ class QueryResponse(BaseModel):
     translator_backend: str | None = None
     retrieval_hint_applied: bool = False
     retrieved_doc_ids: list[str] = Field(default_factory=list)
+    conversation_id: str | None = None
 
 
 class SourceCorpusStats(BaseModel):
@@ -75,3 +80,67 @@ class AdminStatsResponse(BaseModel):
     total_documents: int
     total_chunks: int
     route_distribution: dict[str, int]
+
+
+# ---------------------------------------------------------------------------
+# User Authentication & Chat History Schemas
+# ---------------------------------------------------------------------------
+
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=32)
+    password: str = Field(min_length=6, max_length=128)
+    full_name: str = Field(min_length=1, max_length=100)
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str = Field(description="Google ID Token from Google Identity Services or dev token")
+    email: str | None = Field(default=None, description="Optional email for Google sign in")
+    name: str | None = Field(default=None, description="Optional full name for Google sign in")
+
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    full_name: str
+    role: str
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserResponse
+
+
+class ConversationCreateRequest(BaseModel):
+    title: str = Field(default="New Scheme Consultation", max_length=100)
+
+
+class MessageResponse(BaseModel):
+    id: str
+    role: str
+    text: str
+    language: str | None = "en"
+    confidence: float | None = None
+    route: str | None = None
+    sources: list[dict[str, Any]] = Field(default_factory=list)
+    created_at: str
+
+
+class ConversationResponse(BaseModel):
+    id: str
+    title: str
+    created_at: str
+    updated_at: str
+    message_count: int = 0
+
+
+class ConversationDetailResponse(BaseModel):
+    id: str
+    title: str
+    created_at: str
+    updated_at: str
+    messages: list[MessageResponse]

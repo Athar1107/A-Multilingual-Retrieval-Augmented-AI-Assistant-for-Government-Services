@@ -7,6 +7,7 @@ generation, translation, and fallback routing into a coherent workflow.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Protocol
 
 from app.config import CONFIDENCE_THRESHOLD, TOP_K_DEFAULT, USE_RETRIEVAL_HINTS
@@ -146,10 +147,15 @@ class RAGPipeline:
         ``retrieved_doc_ids``, ``route``, ``translator_backend``, and ``retrieval_hint_applied``.
         """
         # Step 1: Translate non-English queries to English for retrieval
+        started = time.perf_counter()
+        latencies = {"translate_in": 0.0, "retrieve": 0.0, "generate": 0.0, "translate_out": 0.0}
+
         english_query = query
+        t_stage = time.perf_counter()
         if language != "en" and self.translator:
             english_query = self.translator.konkani_to_english(query)
             logger.info("Translated query: '%s' → '%s'", query[:80], english_query[:80])
+        latencies["translate_in"] = round((time.perf_counter() - t_stage) * 1000, 2)
 
         # Step 1b: Optional hand-made retrieval hint (governed by USE_RETRIEVAL_HINTS)
         retrieval_hint_applied = False
@@ -166,26 +172,34 @@ class RAGPipeline:
                 logger.info("Reinforced query with retrieval hint: '%s'", hint)
 
         # Step 2: Primary retrieval
+        t_stage = time.perf_counter()
         results = self.retriever.retrieve(english_query, top_k=top_k)
+        latencies["retrieve"] = round((time.perf_counter() - t_stage) * 1000, 2)
 
         if not results:
             no_results_ans = (
                 "No reliable information found for your query. Please verify with the official "
                 "scheme portal at https://www.myscheme.gov.in or contact the relevant government office."
             )
+            t_stage = time.perf_counter()
             if language != "en" and self.translator:
                 no_results_ans = self.translator.english_to_konkani(no_results_ans)
+            latencies["translate_out"] = round((time.perf_counter() - t_stage) * 1000, 2)
+            latencies["total"] = round((time.perf_counter() - started) * 1000, 2)
 
             return {
                 "query": query,
+                "translated_query": english_query,
                 "answer": no_results_ans,
                 "confidence": 0.0,
                 "sources": [],
                 "retrieval_results": [],
                 "retrieved_doc_ids": [],
                 "route": "fallback_failed",
+                "route_reason": "no_retrieval_results",
                 "translator_backend": getattr(self.translator, "backend_name", "none") if self.translator else "none",
                 "retrieval_hint_applied": retrieval_hint_applied,
+                "latencies_ms": latencies,
             }
 
         # Step 3: Compute confidence
@@ -193,10 +207,13 @@ class RAGPipeline:
         threshold = getattr(self.router, "confidence_threshold", CONFIDENCE_THRESHOLD)
 
         # Step 4: Routing & Attempt 2 (Alternate retrieval on low confidence)
+        route_reason = "confidence_above_threshold"
         if confidence_score >= threshold:
             # Direct route
             context = "\n\n".join(r["content"] for r in results)
+            t_stage = time.perf_counter()
             answer_text = self.generator.generate(english_query, context)
+            latencies["generate"] = round((time.perf_counter() - t_stage) * 1000, 2)
             routed = self._route(english_query, confidence_score, answer_text, is_recovered=False)
         else:
             # Low confidence: Attempt 2 (Alternate retrieval path)
@@ -221,7 +238,9 @@ class RAGPipeline:
 
             results_2: list[dict[str, Any]] = []
             if alt_query and alt_query.strip() and alt_query.strip() != english_query.strip():
+                t_stage = time.perf_counter()
                 results_2 = self.retriever.retrieve(alt_query, top_k=top_k)
+                latencies["retrieve"] += round((time.perf_counter() - t_stage) * 1000, 2)
 
             conf_2 = self._compute_confidence(results_2) if results_2 else 0.0
 
@@ -230,21 +249,28 @@ class RAGPipeline:
                 results = results_2
                 confidence_score = conf_2
                 context = "\n\n".join(r["content"] for r in results)
+                t_stage = time.perf_counter()
                 answer_text = self.generator.generate(alt_query, context)
+                latencies["generate"] = round((time.perf_counter() - t_stage) * 1000, 2)
                 routed = self._route(alt_query, confidence_score, answer_text, is_recovered=True)
+                route_reason = "fallback_recovered_second_retrieval"
                 logger.info("Fallback recovered successfully with confidence %.4f", conf_2)
             else:
                 # Fallback failed
                 routed = self._route(english_query, confidence_score, "", is_recovered=False)
                 results = []  # Discard low-confidence unrelated sources
+                route_reason = "confidence_below_threshold"
                 logger.info("Fallback failed; returning caveat guidance.")
 
         # Step 5: ALWAYS translate the final answer back to the user's language, including on fallback!
+        t_stage = time.perf_counter()
         if language != "en" and self.translator:
             try:
                 routed["answer"] = self.translator.english_to_konkani(routed["answer"])
             except Exception as exc:
                 logger.warning("Failed translating final response back to %s: %s", language, exc)
+        latencies["translate_out"] = round((time.perf_counter() - t_stage) * 1000, 2)
+        latencies["total"] = round((time.perf_counter() - started) * 1000, 2)
 
         # Step 6: Extract unique sources and doc IDs
         seen_urls: set[str] = set()
@@ -271,12 +297,15 @@ class RAGPipeline:
 
         return {
             "query": query,
+            "translated_query": english_query,
             "answer": routed["answer"],
             "confidence": routed["confidence"],
             "route": routed["route"],
+            "route_reason": route_reason,
             "sources": sources,
             "retrieval_results": results,
             "retrieved_doc_ids": retrieved_doc_ids,
             "translator_backend": translator_backend,
             "retrieval_hint_applied": retrieval_hint_applied,
+            "latencies_ms": latencies,
         }

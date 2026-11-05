@@ -31,22 +31,35 @@ def _reciprocal_rank_fusion(
     """
     scores: dict[str, dict] = {}
 
-    for rank, result in enumerate(dense_results):
-        # Use the first 300 chars of content as a dedup key
+    def _accumulate(result: dict, rank: int) -> None:
         key = result["content"][:300]
         if key not in scores:
-            scores[key] = {"result": result, "rrf_score": 0.0}
+            scores[key] = {
+                "result": {
+                    **result,
+                    "dense_score": result.get("semantic_score"),
+                    "bm25_score": result.get("bm25_score"),
+                },
+                "rrf_score": 0.0,
+            }
+        else:
+            merged = scores[key]["result"]
+            if result.get("semantic_score") is not None:
+                merged["dense_score"] = result.get("semantic_score")
+            if result.get("bm25_score") is not None:
+                merged["bm25_score"] = result.get("bm25_score")
+            if result.get("scheme_id"):
+                merged["scheme_id"] = result.get("scheme_id")
         scores[key]["rrf_score"] += 1.0 / (k + rank + 1)
 
+    for rank, result in enumerate(dense_results):
+        _accumulate(result, rank)
     for rank, result in enumerate(bm25_results):
-        key = result["content"][:300]
-        if key not in scores:
-            scores[key] = {"result": result, "rrf_score": 0.0}
-        scores[key]["rrf_score"] += 1.0 / (k + rank + 1)
+        _accumulate(result, rank)
 
     fused = sorted(scores.values(), key=lambda x: x["rrf_score"], reverse=True)
     return [
-        {**item["result"], "rrf_score": round(item["rrf_score"], 6)}
+        {**item["result"], "rrf_score": round(item["rrf_score"], 6), "fused_score": round(item["rrf_score"], 6)}
         for item in fused
     ]
 
@@ -125,6 +138,7 @@ class Retriever:
                     "content": doc,
                     "title": meta.get("title", ""),
                     "source_url": meta.get("source_url", ""),
+                    "scheme_id": meta.get("scheme_id", ""),
                     "type": "dense",
                     "semantic_score": round(
                         max(0.0, min(1.0, 1.0 - float(dense_raw["distances"][0][idx]))),
@@ -148,6 +162,7 @@ class Retriever:
                     "content": self._all_docs[idx],
                     "title": meta.get("title", ""),
                     "source_url": meta.get("source_url", ""),
+                    "scheme_id": meta.get("scheme_id", ""),
                     "type": "bm25",
                     "bm25_score": round(float(bm25_scores[idx]), 4),
                 })
