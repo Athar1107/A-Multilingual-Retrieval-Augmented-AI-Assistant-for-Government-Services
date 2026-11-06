@@ -64,13 +64,8 @@ docs/.doctrees/
 site/
 
 # ─── Data & Databases ────────────────────────────────────────────────────────
-data/chroma_db/
-data/processed/
-data/indexes/
-data/indexed/
-data/translation_audit/
-data/raw/
-*.db
+data/
+*.db*
 *.sqlite
 *.sqlite3
 

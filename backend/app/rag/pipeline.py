@@ -208,6 +208,7 @@ class RAGPipeline:
 
         # Step 4: Routing & Attempt 2 (Alternate retrieval on low confidence)
         route_reason = "confidence_above_threshold"
+        fallback_path_used = "none"
         if confidence_score >= threshold:
             # Direct route
             context = "\n\n".join(r["content"] for r in results)
@@ -223,16 +224,22 @@ class RAGPipeline:
             # Path A: Hindi pivot for non-English queries if supported
             if language != "en" and self.translator and hasattr(self.translator, "konkani_to_english_pivot"):
                 try:
-                    alt_query = self.translator.konkani_to_english_pivot(query)
-                    logger.info("Attempt 2 Hindi pivot query: '%s' → '%s'", query[:80], alt_query[:80])
+                    alt_candidate = self.translator.konkani_to_english_pivot(query)
+                    logger.info("Attempt 2 Hindi pivot query: '%s' → '%s'", query[:80], alt_candidate[:80])
+                    if alt_candidate and alt_candidate.strip() and alt_candidate.strip() != english_query.strip():
+                        alt_query = alt_candidate
+                        fallback_path_used = "hindi_pivot"
                 except Exception as exc:
                     logger.warning("Hindi pivot attempt failed: %s", exc)
 
             # Path B: LLM search query reformulation / paraphrase
             if (not alt_query or alt_query == english_query) and hasattr(self.generator, "paraphrase_query"):
                 try:
-                    alt_query = self.generator.paraphrase_query(english_query)
-                    logger.info("Attempt 2 LLM paraphrase query: '%s' → '%s'", english_query[:80], alt_query[:80])
+                    alt_candidate = self.generator.paraphrase_query(english_query)
+                    logger.info("Attempt 2 LLM paraphrase query: '%s' → '%s'", english_query[:80], alt_candidate[:80])
+                    if alt_candidate and alt_candidate.strip() and alt_candidate.strip() != english_query.strip():
+                        alt_query = alt_candidate
+                        fallback_path_used = "llm_paraphrase"
                 except Exception as exc:
                     logger.warning("LLM paraphrase attempt failed: %s", exc)
 
@@ -261,6 +268,8 @@ class RAGPipeline:
                 results = []  # Discard low-confidence unrelated sources
                 route_reason = "confidence_below_threshold"
                 logger.info("Fallback failed; returning caveat guidance.")
+
+        english_answer = routed.get("answer", "")
 
         # Step 5: ALWAYS translate the final answer back to the user's language, including on fallback!
         t_stage = time.perf_counter()
@@ -298,12 +307,15 @@ class RAGPipeline:
         return {
             "query": query,
             "translated_query": english_query,
+            "english_answer": english_answer,
             "answer": routed["answer"],
             "confidence": routed["confidence"],
             "route": routed["route"],
             "route_reason": route_reason,
+            "fallback_path_used": fallback_path_used,
             "sources": sources,
             "retrieval_results": results,
+            "retrieved_chunks": [r.get("content", "") for r in results],
             "retrieved_doc_ids": retrieved_doc_ids,
             "translator_backend": translator_backend,
             "retrieval_hint_applied": retrieval_hint_applied,

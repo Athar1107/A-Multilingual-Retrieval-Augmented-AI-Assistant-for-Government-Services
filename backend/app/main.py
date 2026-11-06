@@ -255,6 +255,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as exc:
         logger.warning("model_prewarm_skipped_or_failed", error=str(exc))
 
+    try:
+        from .rag.translation import check_active_backend
+        active_t = check_active_backend()
+        logger.info("translation_backend_startup", active_backend=active_t)
+    except Exception as exc:
+        logger.error("translation_backend_startup_failed", error=str(exc))
+        if os.environ.get("TRANSLATOR_REQUIRED") == "indictrans2":
+            raise
+
     yield
     logger.info("seva_ai_shutdown")
 
@@ -352,9 +361,13 @@ async def health() -> dict[str, str]:
 @app.get("/translate/status")
 async def translate_status() -> dict[str, str]:
     """Return which translation backend is active (unauthenticated)."""
+    global _pipeline
     pipeline = _pipeline
     if pipeline is None:
-        return {"backend": "not_loaded", "note": "Pipeline not yet initialized"}
+        try:
+            pipeline = _get_pipeline()
+        except Exception as exc:
+            return {"backend": "error", "note": f"Pipeline initialization failed: {exc}"}
     translator = getattr(pipeline, "translator", None)
     if translator is None:
         return {"backend": "none", "note": "Translation disabled"}
@@ -720,4 +733,8 @@ async def query(
         retrieval_hint_applied=result.get("retrieval_hint_applied", False),
         retrieved_doc_ids=result.get("retrieved_doc_ids", []),
         conversation_id=conv_id,
+        fallback_path_used=result.get("fallback_path_used", "none"),
+        translated_query=result.get("translated_query"),
+        english_answer=result.get("english_answer"),
+        retrieved_chunks=result.get("retrieved_chunks", []),
     )

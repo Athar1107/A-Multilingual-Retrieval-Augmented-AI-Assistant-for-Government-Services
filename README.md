@@ -148,6 +148,14 @@ Access the application at **http://localhost**.
 
 ---
 
+## Operational Admin Center (`/admin`)
+
+The platform features an isolated, production-grade operational admin console at `/admin`:
+
+- **URL:** `http://localhost:5173/admin`
+- **Default Setup & Credentials:**
+  - Set `ADMIN_API_KEY` (e.g., `admin@1234`) and `ADMIN_USERNAME=Atharv` in `backend/.env`.
+  - Admin login accepts these credentials and securely exchanges them for an active administrative session.
 - **Security:**
   - Authenticated via `X-Admin-Key` header with constant-time HMAC digest (`hmac.compare_digest`).
   - Strict fail-closed policy (503 Service Unavailable if `ADMIN_API_KEY` is unset).
@@ -217,3 +225,5 @@ pytest backend/tests/ -v
 # Run frontend smoke tests
 cd frontend && npm test
 ```
+
+> **Note on Manual Scripts:** Ad-hoc diagnostic and exploratory scripts are maintained under `backend/scripts/manual/` (`test_api_live.py`, `test_konkani_query.py`, etc.). These scripts are intended for manual local verification and are strictly **not part of CI**. CI executes the formal automated test suite under `backend/tests/`.

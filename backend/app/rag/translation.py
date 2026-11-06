@@ -223,41 +223,41 @@ class TranslationService:
         if self._failed:
             return False
 
-        try:
-            if _OVERRIDE == "none":
-                logger.info("Translation disabled via TRANSLATION_MODEL=none.")
+        override = os.environ.get("TRANSLATION_MODEL", _OVERRIDE).lower()
+        hf_token = os.environ.get("HF_TOKEN", "").strip() or _HF_TOKEN
+        required = os.environ.get("TRANSLATOR_REQUIRED", "").strip().lower()
+
+        if override == "none" or required == "none":
+            logger.info("Translation disabled via configuration.")
+            self._failed = True
+            return False
+
+        must_use_indictrans2 = (required == "indictrans2") or (override == "indictrans2") or bool(hf_token and override in ("indictrans2", "auto"))
+
+        if must_use_indictrans2:
+            try:
+                self._backend = _IndicTrans2Backend()
+                logger.info("Translation backend: IndicTrans2 (native kok_Deva / gom_Deva)")
+                return True
+            except Exception as exc:
+                logger.error("Failed loading IndicTrans2: %s", exc)
                 self._failed = True
-                return False
+                raise RuntimeError(f"IndicTrans2 failed to load: {exc}") from exc
 
-            # Prefer IndicTrans2 when a HF token is available
-            if _OVERRIDE in ("indictrans2", "auto") and _HF_TOKEN:
-                try:
-                    self._backend = _IndicTrans2Backend()
-                    logger.info("Translation backend: IndicTrans2 (native kok_Deva)")
-                    return True
-                except Exception as exc:
-                    logger.warning(
-                        "IndicTrans2 unavailable (%s); trying NLLB fallback.", exc
-                    )
-
-            # Fall back to NLLB-200 (ungated, always downloadable)
-            if _OVERRIDE in ("nllb", "auto"):
+        # Fall back to NLLB-200 (ungated, always downloadable) if not requiring IndicTrans2
+        if override in ("nllb", "auto"):
+            try:
                 self._backend = _NLLBBackend()
                 logger.info(
                     "Translation backend: NLLB-200 "
                     "(Konkani proxied via Marathi — set HF_TOKEN for native kok_Deva)"
                 )
                 return True
-
-        except Exception as exc:
-            logger.warning(
-                "All translation backends failed: %s. "
-                "Queries will be processed in English only.",
-                exc,
-            )
-            self._failed = True
-
-        return False
+            except Exception as exc:
+                logger.warning("NLLB backend failed: %s", exc)
+                self._failed = True
+                if required == "nllb":
+                    raise RuntimeError(f"NLLB backend required but failed: {exc}") from exc
 
     def konkani_to_english(self, text: str) -> str:
         """Translate Konkani Devanagari query to English for retrieval.
@@ -301,9 +301,25 @@ class TranslationService:
     def backend_name(self) -> str:
         """Return the name of the active backend, or 'none'."""
         if self._backend is None and not self._failed:
-            return "not_loaded"
+            try:
+                self._load()
+            except Exception:
+                pass
         if isinstance(self._backend, _IndicTrans2Backend):
             return "indictrans2"
         if isinstance(self._backend, _NLLBBackend):
             return "nllb_marathi_proxy"
         return "none"
+
+    def startup_check(self) -> str:
+        """Startup check that triggers loading and logs the active backend."""
+        self._load()
+        name = self.backend_name
+        logger.info("translation_startup_check: active backend verified as '%s'", name)
+        return name
+
+
+def check_active_backend() -> str:
+    """Startup utility that initializes and logs the active translation backend."""
+    service = TranslationService()
+    return service.startup_check()

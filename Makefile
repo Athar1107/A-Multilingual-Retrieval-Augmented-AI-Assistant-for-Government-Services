@@ -7,14 +7,14 @@
 
 dev:
 	@echo "Starting development stack..."
-	docker compose -f docker/docker-compose.yml up
+	docker compose up
 
 dev-build:
 	@echo "Building and starting development stack..."
-	docker compose -f docker/docker-compose.yml up --build
+	docker compose up --build
 
 down:
-	docker compose -f docker/docker-compose.yml down
+	docker compose down
 
 # ─── Testing ─────────────────────────────────────────────────────────────────
 

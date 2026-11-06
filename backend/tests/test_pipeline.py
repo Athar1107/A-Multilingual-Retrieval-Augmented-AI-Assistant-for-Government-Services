@@ -233,3 +233,31 @@ def test_pipeline_omits_hint_when_flag_disabled() -> None:
 
     # Hint should not be appended
     assert retriever.query == devanagari_input
+
+
+def test_pipeline_hindi_pivot_executed_on_low_confidence() -> None:
+    class DynamicScoreRetriever:
+        def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
+            # Initial query returns low confidence 0.35; Hindi pivot query returns 0.85
+            score = 0.85 if "pivot" in query else 0.35
+            return [{
+                "content": f"Evidence for {query}",
+                "semantic_score": score,
+                "rrf_score": 0.5,
+                "title": "Scholarship Scheme",
+                "source_url": "https://example.gov/scheme",
+                "scheme_id": "scholarship-id",
+            }]
+
+    translator = RecordingTranslator()
+    pipeline = RAGPipeline(
+        retriever=DynamicScoreRetriever(),
+        generator=StubGenerator(),
+        router=FallbackRouter(confidence_threshold=0.50),
+        translator=translator,
+    )
+
+    result = pipeline.answer("कागदपत्रां कितें जाय?", language="kok")
+    assert result["route"] == "fallback_recovered"
+    assert result["fallback_path_used"] == "hindi_pivot"
+    assert result["confidence"] == 0.85

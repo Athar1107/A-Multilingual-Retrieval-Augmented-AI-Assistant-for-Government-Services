@@ -71,8 +71,8 @@ Helper scripts in [`backend/scripts/`](file:///c:/Users/athar/coding/model%20rev
 | `status.py` | Verify total documents, ChromaDB collection count, and metadata completeness. | `python backend/scripts/status.py` |
 | `corpus_summary.py` | Display granular document and chunk breakdown across myScheme and Goa government PDF sources. | `python backend/scripts/corpus_summary.py` |
 | `smoke_retrieval.py` | Run quick dense + BM25 retrieval for sample queries. | `python backend/scripts/smoke_retrieval.py` |
-| `test_api_live.py` | Test running FastAPI server via live HTTP requests. | `python backend/scripts/test_api_live.py` |
-| `test_konkani_query.py` | Execute end-to-end Konkani queries against the live server. | `python backend/scripts/test_konkani_query.py` |
+| `manual/test_api_live.py` | Test running FastAPI server via live HTTP requests (manual, not CI). | `python backend/scripts/manual/test_api_live.py` |
+| `manual/test_konkani_query.py` | Execute end-to-end Konkani queries against live server (manual, not CI). | `python backend/scripts/manual/test_konkani_query.py` |
 
 ---
 

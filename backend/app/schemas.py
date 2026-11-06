@@ -63,6 +63,10 @@ class QueryResponse(BaseModel):
     retrieval_hint_applied: bool = False
     retrieved_doc_ids: list[str] = Field(default_factory=list)
     conversation_id: str | None = None
+    fallback_path_used: str = "none"
+    translated_query: str | None = None
+    english_answer: str | None = None
+    retrieved_chunks: list[str] = Field(default_factory=list)
 
 
 class SourceCorpusStats(BaseModel):
