@@ -148,20 +148,6 @@ Access the application at **http://localhost**.
 
 ---
 
-## Operational Admin Center (`/admin`)
-
-The platform features an isolated, production-grade operational admin console at `/admin`:
-
-- **URL:** `http://localhost:5173/admin`
-- **Default Credentials:**
-  - **Username:** `Atharv`
-  - **Password / Key:** `admin@1234`
-- **Environment Configuration:**
-  ```bash
-  ADMIN_USERNAME=Atharv
-  ADMIN_API_KEY=admin@1234
-  QUERY_LOG_DB_PATH=data/query_log.db
-  ```
 - **Security:**
   - Authenticated via `X-Admin-Key` header with constant-time HMAC digest (`hmac.compare_digest`).
   - Strict fail-closed policy (503 Service Unavailable if `ADMIN_API_KEY` is unset).
